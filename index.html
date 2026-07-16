@@ -593,4 +593,381 @@
               <label for="in-bni">Pemasukan Bank BNI (Rp)</label>
               <input type="number" id="in-bni" min="0" value="0">
             </div>
-            <div
+            <div class="form-group">
+              <label for="in-bca">Pemasukan Bank BCA (Rp)</label>
+              <input type="number" id="in-bca" min="0" value="0">
+            </div>
+            <div class="form-group">
+              <label for="in-bsi">Pemasukan Bank BSI (Rp)</label>
+              <input type="number" id="in-bsi" min="0" value="0">
+            </div>
+          </div>
+          <button type="submit">Simpan Transaksi Pemasukan</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="table-header-flex">
+          <h2>Log Transaksi Masuk</h2>
+          <input type="text" id="search-pemasukan" class="search-input" placeholder="Cari tanggal atau hari...">
+        </div>
+        <div class="table-responsive">
+          <table id="table-pemasukan">
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>BRI</th>
+                <th>BNI</th>
+                <th>BCA</th>
+                <th>BSI</th>
+                <th>Admin</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="page-pengeluaran" class="page-section">
+      <div class="header-block">
+        <h1>Catat Pengeluaran</h1>
+        <div class="subtitle">Dokumentasi transaksi dan pemotongan dana keluar.</div>
+      </div>
+      <div class="card">
+        <form id="form-pengeluaran">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="tgl-pengeluaran">Tanggal Transaksi</label>
+              <input type="date" id="tgl-pengeluaran" required>
+            </div>
+            <div class="form-group">
+              <label for="deskripsi-out">Deskripsi Transaksi</label>
+              <input type="text" id="deskripsi-out" placeholder="Contoh: Biaya Operasional" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="select-bank">Pilih Rekening Bank</label>
+              <select id="select-bank" required>
+                <option value="BRI">BRI</option>
+                <option value="BNI">BNI</option>
+                <option value="BCA">BCA</option>
+                <option value="BSI">BSI</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="jumlah-out">Nominal (Rp)</label>
+              <input type="number" id="jumlah-out" min="0" placeholder="0" required>
+            </div>
+          </div>
+          <button type="submit">Simpan Transaksi Pengeluaran</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="table-header-flex">
+          <h2>Log Transaksi Keluar</h2>
+          <input type="text" id="search-pengeluaran" class="search-input" placeholder="Cari tanggal, hari, atau deskripsi...">
+        </div>
+        <div class="table-responsive">
+          <table id="table-pengeluaran">
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Deskripsi</th>
+                <th>Bank</th>
+                <th>Jumlah</th>
+                <th>Admin</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    document.getElementById('welcome-admin').innerText = activeAdmin;
+
+    document.getElementById('logout-trigger').addEventListener('click', function(e) {
+      e.preventDefault();
+      if(confirm('Apakah kamu yakin ingin keluar dari sistem?')) {
+        localStorage.removeItem('current_admin');
+        window.location.href = 'login.html';
+      }
+    });
+
+    const hamburger = document.getElementById('hamburger-btn');
+    const navMenu = document.getElementById('nav-menu');
+    const navLinks = document.querySelectorAll('.nav-link');
+    const pages = document.querySelectorAll('.page-section');
+
+    hamburger.addEventListener('click', () => {
+      hamburger.classList.toggle('active');
+      navMenu.classList.toggle('active');
+    });
+
+    navLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        hamburger.classList.remove('active');
+        navMenu.classList.remove('active');
+
+        navLinks.forEach(l => l.classList.remove('active-link'));
+        link.classList.add('active-link');
+
+        const targetPageId = link.getAttribute('data-target');
+        pages.forEach(page => {
+          if (page.id === targetPageId) {
+            page.classList.add('active-page');
+          } else {
+            page.classList.remove('active-page');
+          }
+        });
+        window.scrollTo(0, 0);
+      });
+    });
+
+    let dataPemasukan = JSON.parse(localStorage.getItem('plaza_pemasukan')) || [];
+    let dataPengeluaran = JSON.parse(localStorage.getItem('plaza_pengeluaran')) || [];
+    let financeChart = null;
+
+    const formatRupiah = (angka) => {
+      return 'Rp ' + parseInt(angka).toLocaleString('id-ID');
+    };
+
+    const getDayName = (dateString) => {
+      const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      const date = new Date(dateString);
+      return days[date.getDay()];
+    };
+
+    const formatDateWithDay = (dateString) => {
+      if (!dateString) return '';
+      const dayName = getDayName(dateString);
+      const parts = dateString.split('-');
+      if (parts.length === 3) {
+        return `${dayName}, ${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      return dateString;
+    };
+
+    function updateChart(totalIn, totalOut, totalSaldo) {
+      const ctx = document.getElementById('financeChart').getContext('2d');
+      if (financeChart) { financeChart.destroy(); }
+
+      financeChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Total Pemasukan', 'Total Pengeluaran', 'Sisa Saldo Bersih'],
+          datasets: [{
+            data: [totalIn, totalOut, totalSaldo],
+            backgroundColor: ['rgba(56, 189, 248, 0.2)', 'rgba(239, 68, 68, 0.2)', 'rgba(16, 185, 129, 0.2)'],
+            borderColor: ['#38bdf8', '#ef4444', '#10b981'],
+            borderWidth: 2,
+            borderRadius: 8,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.04)' },
+              ticks: {
+                color: '#94a3b8',
+                callback: function(value) { return 'Rp ' + value.toLocaleString('id-ID'); }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function calculatePeriodStats() {
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const oneDay = 24 * 60 * 60 * 1000;
+
+      let inDay = 0, outDay = 0;
+      let inWeek = 0, outWeek = 0;
+      let inMonth = 0, outMonth = 0;
+
+      dataPemasukan.forEach(item => {
+        const itemDate = new Date(item.tanggal);
+        itemDate.setHours(0,0,0,0);
+        const diffDays = Math.round((today - itemDate) / oneDay);
+        const rowTotal = (item.bri || 0) + (item.bni || 0) + (item.bca || 0) + (item.bsi || 0);
+
+        if (diffDays === 0) inDay += rowTotal;
+        if (diffDays >= 0 && diffDays < 7) inWeek += rowTotal;
+        if (diffDays >= 0 && diffDays < 30) inMonth += rowTotal;
+      });
+
+      dataPengeluaran.forEach(item => {
+        const itemDate = new Date(item.tanggal);
+        itemDate.setHours(0,0,0,0);
+        const diffDays = Math.round((today - itemDate) / oneDay);
+        const amt = item.jumlah || 0;
+
+        if (diffDays === 0) outDay += amt;
+        if (diffDays >= 0 && diffDays < 7) outWeek += amt;
+        if (diffDays >= 0 && diffDays < 30) outMonth += amt;
+      });
+
+      document.getElementById('period-in-day').innerText = formatRupiah(inDay);
+      document.getElementById('period-out-day').innerText = formatRupiah(outDay);
+      document.getElementById('period-in-week').innerText = formatRupiah(inWeek);
+      document.getElementById('period-out-week').innerText = formatRupiah(outWeek);
+      document.getElementById('period-in-month').innerText = formatRupiah(inMonth);
+      document.getElementById('period-out-month').innerText = formatRupiah(outMonth);
+    }
+
+    function updateDashboard() {
+      let totalIn = 0; let totalOut = 0;
+      let inBri = 0, inBni = 0, inBca = 0, inBsi = 0;
+      let outBri = 0, outBni = 0, outBca = 0, outBsi = 0;
+
+      const filterIn = document.getElementById('search-pemasukan').value.toLowerCase();
+      const tbodyIn = document.querySelector('#table-pemasukan tbody');
+      tbodyIn.innerHTML = '';
+
+      dataPemasukan.forEach((item, index) => {
+        const rowTotal = (item.bri || 0) + (item.bni || 0) + (item.bca || 0) + (item.bsi || 0);
+        totalIn += rowTotal;
+        inBri += (item.bri || 0); inBni += (item.bni || 0); inBca += (item.bca || 0); inBsi += (item.bsi || 0);
+
+        const displayedDate = formatDateWithDay(item.tanggal);
+        const creator = item.admin || 'System';
+
+        if (displayedDate.toLowerCase().includes(filterIn) || item.tanggal.toLowerCase().includes(filterIn) || creator.toLowerCase().includes(filterIn)) {
+          tbodyIn.innerHTML += `
+            <tr>
+              <td>${displayedDate}</td>
+              <td>${formatRupiah(item.bri || 0)}</td>
+              <td>${formatRupiah(item.bni || 0)}</td>
+              <td>${formatRupiah(item.bca || 0)}</td>
+              <td>${formatRupiah(item.bsi || 0)}</td>
+              <td><span class="admin-badge">${creator}</span></td>
+              <td><button class="btn-delete" onclick="hapusPemasukan(${index})">Hapus</button></td>
+            </tr>
+          `;
+        }
+      });
+
+      const filterOut = document.getElementById('search-pengeluaran').value.toLowerCase();
+      const tbodyOut = document.querySelector('#table-pengeluaran tbody');
+      tbodyOut.innerHTML = '';
+
+      dataPengeluaran.forEach((item, index) => {
+        const amt = item.jumlah || 0;
+        totalOut += amt;
+
+        if (item.bank === 'BRI') outBri += amt;
+        if (item.bank === 'BNI') outBni += amt;
+        if (item.bank === 'BCA') outBca += amt;
+        if (item.bank === 'BSI') outBsi += amt;
+
+        const displayedDate = formatDateWithDay(item.tanggal);
+        const creator = item.admin || 'System';
+
+        if (displayedDate.toLowerCase().includes(filterOut) || item.tanggal.toLowerCase().includes(filterOut) || item.deskripsi.toLowerCase().includes(filterOut) || creator.toLowerCase().includes(filterOut)) {
+          tbodyOut.innerHTML += `
+            <tr>
+              <td>${displayedDate}</td>
+              <td>${item.deskripsi}</td>
+              <td>${item.bank}</td>
+              <td>${formatRupiah(amt)}</td>
+              <td><span class="admin-badge">${creator}</span></td>
+              <td><button class="btn-delete" onclick="hapusPengeluaran(${index})">Hapus</button></td>
+            </tr>
+          `;
+        }
+      });
+
+      const totalSaldo = totalIn - totalOut;
+
+      document.getElementById('total-pemasukan-display').innerText = formatRupiah(totalIn);
+      document.getElementById('total-pengeluaran-display').innerText = formatRupiah(totalOut);
+      document.getElementById('total-saldo-display').innerText = formatRupiah(totalSaldo);
+
+      document.getElementById('in-total-bri').innerText = formatRupiah(inBri);
+      document.getElementById('in-total-bni').innerText = formatRupiah(inBni);
+      document.getElementById('in-total-bca').innerText = formatRupiah(inBca);
+      document.getElementById('in-total-bsi').innerText = formatRupiah(inBsi);
+
+      document.getElementById('out-total-bri').innerText = formatRupiah(outBri);
+      document.getElementById('out-total-bni').innerText = formatRupiah(outBni);
+      document.getElementById('out-total-bca').innerText = formatRupiah(outBca);
+      document.getElementById('out-total-bsi').innerText = formatRupiah(outBsi);
+
+      document.getElementById('saldo-bri').innerText = formatRupiah(inBri - outBri);
+      document.getElementById('saldo-bni').innerText = formatRupiah(inBni - outBni);
+      document.getElementById('saldo-bca').innerText = formatRupiah(inBca - outBca);
+      document.getElementById('saldo-bsi').innerText = formatRupiah(inBsi - outBsi);
+
+      localStorage.setItem('plaza_pemasukan', JSON.stringify(dataPemasukan));
+      localStorage.setItem('plaza_pengeluaran', JSON.stringify(dataPengeluaran));
+
+      calculatePeriodStats();
+      updateChart(totalIn, totalOut, totalSaldo);
+    }
+
+    document.getElementById('search-pemasukan').addEventListener('input', updateDashboard);
+    document.getElementById('search-pengeluaran').addEventListener('input', updateDashboard);
+
+    document.getElementById('form-pemasukan').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const baru = {
+        tanggal: document.getElementById('tgl-pemasukan').value,
+        bri: parseFloat(document.getElementById('in-bri').value) || 0,
+        bni: parseFloat(document.getElementById('in-bni').value) || 0,
+        bca: parseFloat(document.getElementById('in-bca').value) || 0,
+        bsi: parseFloat(document.getElementById('in-bsi').value) || 0,
+        admin: activeAdmin
+      };
+      dataPemasukan.push(baru);
+      this.reset();
+      updateDashboard();
+    });
+
+    document.getElementById('form-pengeluaran').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const baru = {
+        tanggal: document.getElementById('tgl-pengeluaran').value,
+        deskripsi: document.getElementById('deskripsi-out').value,
+        bank: document.getElementById('select-bank').value,
+        jumlah: parseFloat(document.getElementById('jumlah-out').value) || 0,
+        admin: activeAdmin
+      };
+      dataPengeluaran.push(baru);
+      this.reset();
+      updateDashboard();
+    });
+
+    window.hapusPemasukan = function(index) {
+      if(confirm('Apakah kamu yakin ingin menghapus transaksi pemasukan ini?')) {
+        dataPemasukan.splice(index, 1);
+        updateDashboard();
+      }
+    };
+
+    window.hapusPengeluaran = function(index) {
+      if(confirm('Apakah kamu yakin ingin menghapus transaksi pengeluaran ini?')) {
+        dataPengeluaran.splice(index, 1);
+        updateDashboard();
+      }
+    };
+
+    updateDashboard();
+  </script>
+</body>
+</html>
