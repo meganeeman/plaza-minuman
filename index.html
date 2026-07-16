@@ -449,6 +449,12 @@
 </head>
 <body>
 
+  <script>
+  const activeAdmin = localStorage.getItem('current_admin');
+  if (!activeAdmin) {
+    window.location.href = 'login.html';
+  }
+</script>
   <nav class="navbar">
     <button class="hamburger" id="hamburger-btn">
       <span class="bar"></span>
