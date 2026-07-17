@@ -643,8 +643,8 @@ if (activeRole === 'owner') {
       <div class="card">
         <form id="form-pemasukan">
           <div class="form-group">
-            <label for="tgl-pemasukan">Tanggal Transaksi</label>
-            <input type="date" id="tgl-pemasukan" required>
+              <label for="tgl-pemasukan">Tanggal Transaksi (Klik untuk pilih kalender)</label>
+              <input type="date" id="tgl-pemasukan" onclick="this.showPicker()" required>
           </div>
           <div class="form-row">
             <div class="form-group">
@@ -701,8 +701,8 @@ if (activeRole === 'owner') {
         <form id="form-pengeluaran">
           <div class="form-row">
             <div class="form-group">
-              <label for="tgl-pengeluaran">Tanggal Transaksi</label>
-              <input type="date" id="tgl-pengeluaran" required>
+              <label for="tgl-pengeluaran">Tanggal Transaksi (Klik untuk pilih kalender)</label>
+              <input type="date" id="tgl-pengeluaran" onclick="this.showPicker()" required>
             </div>
             <div class="form-group">
               <label for="deskripsi-out">Deskripsi Transaksi</label>
@@ -1111,6 +1111,9 @@ window.hapusPengeluaran = async function(id) {
     };
 
     fetchAllData();
+    const todayString = new Date().toISOString().split('T')[0];
+    document.getElementById('tgl-pemasukan').value = todayString;
+    document.getElementById('tgl-pengeluaran').value = todayString;
   </script>
 </body>
 </html>
