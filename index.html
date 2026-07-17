@@ -759,7 +759,7 @@ if (activeRole === 'owner') {
     
     const clientSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    document.getElementById('welcome-admin').innerText = activeAdmin;
+    document.getElementById('welcome-admin').innerText = activeName || activeAdmin;
 
     document.getElementById('logout-trigger').addEventListener('click', function(e) {
       e.preventDefault();
@@ -1014,7 +1014,7 @@ if (activeRole === 'owner') {
         bni: parseFloat(document.getElementById('in-bni').value) || 0,
         bca: parseFloat(document.getElementById('in-bca').value) || 0,
         bsi: parseFloat(document.getElementById('in-bsi').value) || 0,
-        admin: activeAdmin
+        admin: activeName || activeAdmin
       };
 
       const { error } = await clientSupabase.from('pemasukan').insert([baru]);
@@ -1041,7 +1041,7 @@ if (activeRole === 'owner') {
         deskripsi: document.getElementById('deskripsi-out').value,
         bank: document.getElementById('select-bank').value,
         jumlah: parseFloat(document.getElementById('jumlah-out').value) || 0,
-        admin: activeAdmin
+        admin: activeName || activeAdmin
       };
 
       const { error } = await clientSupabase.from('pengeluaran').insert([baru]);
