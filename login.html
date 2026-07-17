@@ -176,6 +176,7 @@
           btnLogin.disabled = false;
         } else {
           localStorage.setItem('current_admin', data.username);
+          localStorage.setItem('admin_role', data.role);
           window.location.href = 'index.html';
         }
       } catch (err) {
