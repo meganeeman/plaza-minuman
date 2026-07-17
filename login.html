@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Plaza Minuman</title>
+  <title>Plaza Minuman - Login Admin</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
       --bg-primary: #0b0f19;
@@ -12,8 +13,8 @@
       --accent-hover: #0ea5e9;
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
-      --danger: #ef4444;
       --border: rgba(255, 255, 255, 0.05);
+      --danger: #ef4444;
     }
 
     * {
@@ -29,39 +30,37 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
+      height: 100vh;
       padding: 20px;
     }
 
-    .login-card {
+    .login-container {
       background: var(--bg-secondary);
-      padding: 40px;
-      border-radius: 16px;
       border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 40px;
       width: 100%;
       max-width: 400px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
 
-    .login-header {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-
-    .login-header h1 {
+    .logo {
       font-size: 24px;
       font-weight: 700;
-      letter-spacing: -0.5px;
+      text-align: center;
       margin-bottom: 8px;
+      letter-spacing: -0.5px;
     }
 
-    .login-header h1 span {
+    .logo span {
       color: var(--accent);
     }
 
-    .login-header p {
+    .subtitle {
       color: var(--text-muted);
       font-size: 14px;
+      text-align: center;
+      margin-bottom: 30px;
     }
 
     .form-group {
@@ -71,9 +70,9 @@
     .form-group label {
       display: block;
       margin-bottom: 8px;
-      font-weight: 500;
       font-size: 13px;
       color: var(--text-muted);
+      font-weight: 500;
     }
 
     .form-group input {
@@ -97,8 +96,8 @@
       color: var(--danger);
       font-size: 13px;
       margin-bottom: 15px;
-      display: none;
       text-align: center;
+      display: none;
     }
 
     button[type="submit"] {
@@ -118,53 +117,73 @@
     button[type="submit"]:hover {
       background: var(--accent-hover);
     }
+
+    button[type="submit"]:active {
+      transform: scale(0.99);
+    }
   </style>
 </head>
 <body>
 
-  <div class="login-card">
-    <div class="login-header">
-      <h1>Plaza <span>Minuman</span></h1>
-      <p>Masuk ke Dashboard Finansial</p>
-    </div>
+  <div class="login-container">
+    <div class="logo">Plaza <span>Minuman</span></div>
+    <div class="subtitle">Sistem Manajemen Finansial Terintegrasi</div>
 
     <div class="error-msg" id="error-box">Username atau password salah!</div>
 
-    <form id="form-login">
+    <form id="login-form">
       <div class="form-group">
-        <label for="username">Nama Admin</label>
-        <input type="text" id="username" placeholder="Masukkan nama admin..." required>
+        <label for="username">Username Admin</label>
+        <input type="text" id="username" autocomplete="off" required>
       </div>
       <div class="form-group">
         <label for="password">Password</label>
-        <input type="password" id="password" placeholder="••••••••" required>
+        <input type="password" id="password" required>
       </div>
-      <button type="submit">Masuk Ke Sistem</button>
+      <button type="submit" id="btn-login">Masuk ke Sistem</button>
     </form>
   </div>
 
   <script>
-    const adminList = {
-      "admin1": "plaza123",
-      "admin2": "minuman123"
-    };
+    const SUPABASE_URL = "https://vccwscybnhpatjioixfx.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_blMwzDZ5pM1TciQzhsg8UQ_cCB_ixOQ";
+    
+    const clientSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    if (localStorage.getItem('current_admin')) {
-      window.location.href = 'index.html';
-    }
-
-    document.getElementById('form-login').addEventListener('submit', function(e) {
+    document.getElementById('login-form').addEventListener('submit', async function(e) {
       e.preventDefault();
-      const user = document.getElementById('username').value;
-      const pass = document.getElementById('password').value;
+      
+      const userIn = document.getElementById('username').value.trim();
+      const passIn = document.getElementById('password').value;
       const errorBox = document.getElementById('error-box');
+      const btnLogin = document.getElementById('btn-login');
 
-      if (adminList[user] && adminList[user] === pass) {
-        errorBox.style.display = 'none';
-        localStorage.setItem('current_admin', user);
-        window.location.href = 'index.html';
-      } else {
-        errorBox.style.display = 'block';
+      btnLogin.innerText = "Memverifikasi...";
+      btnLogin.disabled = true;
+      errorBox.style.display = "none";
+
+      try {
+        const { data, error } = await clientSupabase
+          .from('admin_list')
+          .select('*')
+          .eq('username', userIn)
+          .eq('password', passIn)
+          .single();
+
+        if (error || !data) {
+          errorBox.style.display = "block";
+          btnLogin.innerText = "Masuk ke Sistem";
+          btnLogin.disabled = false;
+        } else {
+          localStorage.setItem('current_admin', data.username);
+          window.location.href = 'index.html';
+        }
+      } catch (err) {
+        console.error(err);
+        errorBox.innerText = "Terjadi masalah koneksi server!";
+        errorBox.style.display = "block";
+        btnLogin.innerText = "Masuk ke Sistem";
+        btnLogin.disabled = false;
       }
     });
   </script>
