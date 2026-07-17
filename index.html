@@ -496,9 +496,42 @@
 
   <script>
     const activeAdmin = localStorage.getItem('current_admin');
-    if (!activeAdmin) {
-      window.location.href = 'login.html';
-    }
+const activeRole = localStorage.getItem('admin_role'); // <-- Ambil data role
+
+if (!activeAdmin) {
+  window.location.href = 'login.html';
+}
+
+// Aturan 2: Admin biasa tidak boleh melihat dashboard utama
+if (activeRole === 'admin') {
+  // Langsung alihkan halaman default ke menu Input Pemasukan saat pertama masuk
+  window.addEventListener('DOMContentLoaded', () => {
+    // Sembunyikan menu link Dashboard di navbar
+    document.querySelector('[data-target="page-dashboard"]').parentElement.style.display = 'none';
+    
+    // Alihkan tampilan halaman aktif ke halaman pemasukan
+    document.getElementById('page-dashboard').classList.remove('active-page');
+    document.getElementById('page-pemasukan').classList.add('active-page');
+    
+    // Ubah status link aktif di navbar
+    document.querySelector('[data-target="page-dashboard"]').classList.remove('active-link');
+    document.querySelector('[data-target="page-pemasukan"]').classList.add('active-link');
+  });
+}
+
+// Aturan 1: Owner/Bos cuma bisa lihat, tidak bisa manipulasi data
+if (activeRole === 'owner') {
+  window.addEventListener('DOMContentLoaded', () => {
+    // Sembunyikan form input pemasukan & pengeluaran agar tidak bisa menambah data
+    document.getElementById('form-pemasukan').style.display = 'none';
+    document.getElementById('form-pengeluaran').style.display = 'none';
+    
+    // Tambahkan pesan teks di atas halaman sebagai penanda
+    const infoMsg = '<div style="background:rgba(56,189,248,0.1); padding:15px; border-radius:10px; color:#38bdf8; margin-bottom:20px; font-size:14px; text-align:center;">Mode Peninjauan: Anda masuk sebagai Owner (Akses Baca Saja)</div>';
+    document.getElementById('page-pemasukan').insertAdjacentHTML('afterbegin', infoMsg);
+    document.getElementById('page-pengeluaran').insertAdjacentHTML('afterbegin', infoMsg);
+  });
+}
   </script>
 
   <nav class="navbar">
@@ -1024,15 +1057,46 @@
     });
 
     window.hapusPemasukan = async function(id) {
-      if(confirm('Apakah kamu yakin ingin menghapus transaksi pemasukan ini dari cloud server?')) {
-        const { error } = await clientSupabase.from('pemasukan').delete().eq('id', id);
-        if (!error) {
-          fetchAllData();
-        } else {
-          alert('Gagal menghapus data dari server cloud!');
-        }
-      }
-    };
+  if (activeRole === 'owner') {
+    alert('Akses ditolak: Akun Owner tidak diizinkan menghapus data.');
+    return;
+  }
+  if (activeRole === 'admin') {
+    alert('Akses ditolak: Admin tidak bisa menghapus data. Silakan hubungi Akun Master untuk meminta penghapusan.');
+    return;
+  }
+  
+  // Jika lolos (Berarti role adalah master)
+  if(confirm('Apakah kamu yakin ingin menghapus transaksi pemasukan ini dari cloud server?')) {
+    const { error } = await clientSupabase.from('pemasukan').delete().eq('id', id);
+    if (!error) {
+      fetchAllData();
+    } else {
+      alert('Gagal menghapus data dari server cloud!');
+    }
+  }
+};
+
+window.hapusPengeluaran = async function(id) {
+  if (activeRole === 'owner') {
+    alert('Akses ditolak: Akun Owner tidak diizinkan menghapus data.');
+    return;
+  }
+  if (activeRole === 'admin') {
+    alert('Akses ditolak: Admin tidak bisa menghapus data. Silakan hubungi Akun Master untuk meminta penghapusan.');
+    return;
+  }
+
+  // Jika lolos (Berarti role adalah master)
+  if(confirm('Apakah kamu yakin ingin menghapus transaksi pengeluaran ini dari cloud server?')) {
+    const { error } = await clientSupabase.from('pengeluaran').delete().eq('id', id);
+    if (!error) {
+      fetchAllData();
+    } else {
+      alert('Gagal menghapus data dari server cloud!');
+    }
+  }
+};
 
     window.hapusPengeluaran = async function(id) {
       if(confirm('Apakah kamu yakin ingin menghapus transaksi pengeluaran ini dari cloud server?')) {
