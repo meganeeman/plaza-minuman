@@ -829,7 +829,7 @@ if (activeRole === 'owner') {
       if (financeChart) { financeChart.destroy(); }
 
       financeChart = new Chart(ctx, {
-        type: 'bar',
+        type: 'line',
         data: {
           labels: ['Total Pemasukan', 'Total Pengeluaran', 'Sisa Saldo Bersih'],
           datasets: [{

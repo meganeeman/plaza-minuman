@@ -1,0 +1,5 @@
+Project URL / Api Keys:
+https://vccwscybnhpatjioixfx.supabase.co/rest/v1/
+
+API Keys (anon/public)
+sb_publishable_blMwzDZ5pM1TciQzhsg8UQ_cCB_ixOQ
