@@ -177,6 +177,7 @@
         } else {
           localStorage.setItem('current_admin', data.username);
           localStorage.setItem('admin_role', data.role);
+          localStorage.setItem('admin_name', data.nama_lengkap);
           window.location.href = 'index.html';
         }
       } catch (err) {
