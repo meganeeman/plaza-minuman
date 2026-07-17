@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Plaza Minuman Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
       --bg-primary: #0b0f19;
@@ -719,6 +720,11 @@
   </div>
 
   <script>
+    const SUPABASE_URL = "https://vccwscybnhpatjioixfx.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_blMwzDZ5pM1TciQzhsg8UQ_cCB_ixOQ";
+    
+    const clientSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
     document.getElementById('welcome-admin').innerText = activeAdmin;
 
     document.getElementById('logout-trigger').addEventListener('click', function(e) {
@@ -760,8 +766,8 @@
       });
     });
 
-    let dataPemasukan = JSON.parse(localStorage.getItem('plaza_pemasukan')) || [];
-    let dataPengeluaran = JSON.parse(localStorage.getItem('plaza_pengeluaran')) || [];
+    let dataPemasukan = [];
+    let dataPengeluaran = [];
     let financeChart = null;
 
     const formatRupiah = (angka) => {
@@ -858,7 +864,21 @@
       document.getElementById('period-out-month').innerText = formatRupiah(outMonth);
     }
 
-    function updateDashboard() {
+    async function fetchAllData() {
+      try {
+        const resIn = await clientSupabase.from('pemasukan').select('*').order('tanggal', { ascending: false });
+        const resOut = await clientSupabase.from('pengeluaran').select('*').order('tanggal', { ascending: false });
+
+        if (!resIn.error) dataPemasukan = resIn.data || [];
+        if (!resOut.error) dataPengeluaran = resOut.data || [];
+
+        updateDashboardDisplay();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function updateDashboardDisplay() {
       let totalIn = 0; let totalOut = 0;
       let inBri = 0, inBni = 0, inBca = 0, inBsi = 0;
       let outBri = 0, outBni = 0, outBca = 0, outBsi = 0;
@@ -867,7 +887,7 @@
       const tbodyIn = document.querySelector('#table-pemasukan tbody');
       tbodyIn.innerHTML = '';
 
-      dataPemasukan.forEach((item, index) => {
+      dataPemasukan.forEach((item) => {
         const rowTotal = (item.bri || 0) + (item.bni || 0) + (item.bca || 0) + (item.bsi || 0);
         totalIn += rowTotal;
         inBri += (item.bri || 0); inBni += (item.bni || 0); inBca += (item.bca || 0); inBsi += (item.bsi || 0);
@@ -884,7 +904,7 @@
               <td>${formatRupiah(item.bca || 0)}</td>
               <td>${formatRupiah(item.bsi || 0)}</td>
               <td><span class="admin-badge">${creator}</span></td>
-              <td><button class="btn-delete" onclick="hapusPemasukan(${index})">Hapus</button></td>
+              <td><button class="btn-delete" onclick="hapusPemasukan(${item.id})">Hapus</button></td>
             </tr>
           `;
         }
@@ -894,7 +914,7 @@
       const tbodyOut = document.querySelector('#table-pengeluaran tbody');
       tbodyOut.innerHTML = '';
 
-      dataPengeluaran.forEach((item, index) => {
+      dataPengeluaran.forEach((item) => {
         const amt = item.jumlah || 0;
         totalOut += amt;
 
@@ -914,7 +934,7 @@
               <td>${item.bank}</td>
               <td>${formatRupiah(amt)}</td>
               <td><span class="admin-badge">${creator}</span></td>
-              <td><button class="btn-delete" onclick="hapusPengeluaran(${index})">Hapus</button></td>
+              <td><button class="btn-delete" onclick="hapusPengeluaran(${item.id})">Hapus</button></td>
             </tr>
           `;
         }
@@ -941,18 +961,19 @@
       document.getElementById('saldo-bca').innerText = formatRupiah(inBca - outBca);
       document.getElementById('saldo-bsi').innerText = formatRupiah(inBsi - outBsi);
 
-      localStorage.setItem('plaza_pemasukan', JSON.stringify(dataPemasukan));
-      localStorage.setItem('plaza_pengeluaran', JSON.stringify(dataPengeluaran));
-
       calculatePeriodStats();
       updateChart(totalIn, totalOut, totalSaldo);
     }
 
-    document.getElementById('search-pemasukan').addEventListener('input', updateDashboard);
-    document.getElementById('search-pengeluaran').addEventListener('input', updateDashboard);
+    document.getElementById('search-pemasukan').addEventListener('input', updateDashboardDisplay);
+    document.getElementById('search-pengeluaran').addEventListener('input', updateDashboardDisplay);
 
-    document.getElementById('form-pemasukan').addEventListener('submit', function(e) {
+    document.getElementById('form-pemasukan').addEventListener('submit', async function(e) {
       e.preventDefault();
+      const btn = this.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.innerText = "Menyimpan ke Server...";
+
       const baru = {
         tanggal: document.getElementById('tgl-pemasukan').value,
         bri: parseFloat(document.getElementById('in-bri').value) || 0,
@@ -961,13 +982,26 @@
         bsi: parseFloat(document.getElementById('in-bsi').value) || 0,
         admin: activeAdmin
       };
-      dataPemasukan.push(baru);
-      this.reset();
-      updateDashboard();
+
+      const { error } = await clientSupabase.from('pemasukan').insert([baru]);
+      
+      btn.disabled = false;
+      btn.innerText = "Simpan Transaksi Pemasukan";
+
+      if (!error) {
+        this.reset();
+        fetchAllData();
+      } else {
+        alert('Gagal menyimpan data ke server cloud!');
+      }
     });
 
-    document.getElementById('form-pengeluaran').addEventListener('submit', function(e) {
+    document.getElementById('form-pengeluaran').addEventListener('submit', async function(e) {
       e.preventDefault();
+      const btn = this.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.innerText = "Menyimpan ke Server...";
+
       const baru = {
         tanggal: document.getElementById('tgl-pengeluaran').value,
         deskripsi: document.getElementById('deskripsi-out').value,
@@ -975,26 +1009,43 @@
         jumlah: parseFloat(document.getElementById('jumlah-out').value) || 0,
         admin: activeAdmin
       };
-      dataPengeluaran.push(baru);
-      this.reset();
-      updateDashboard();
+
+      const { error } = await clientSupabase.from('pengeluaran').insert([baru]);
+
+      btn.disabled = false;
+      btn.innerText = "Simpan Transaksi Pengeluaran";
+
+      if (!error) {
+        this.reset();
+        fetchAllData();
+      } else {
+        alert('Gagal menyimpan data ke server cloud!');
+      }
     });
 
-    window.hapusPemasukan = function(index) {
-      if(confirm('Apakah kamu yakin ingin menghapus transaksi pemasukan ini?')) {
-        dataPemasukan.splice(index, 1);
-        updateDashboard();
+    window.hapusPemasukan = async function(id) {
+      if(confirm('Apakah kamu yakin ingin menghapus transaksi pemasukan ini dari cloud server?')) {
+        const { error } = await clientSupabase.from('pemasukan').delete().eq('id', id);
+        if (!error) {
+          fetchAllData();
+        } else {
+          alert('Gagal menghapus data dari server cloud!');
+        }
       }
     };
 
-    window.hapusPengeluaran = function(index) {
-      if(confirm('Apakah kamu yakin ingin menghapus transaksi pengeluaran ini?')) {
-        dataPengeluaran.splice(index, 1);
-        updateDashboard();
+    window.hapusPengeluaran = async function(id) {
+      if(confirm('Apakah kamu yakin ingin menghapus transaksi pengeluaran ini dari cloud server?')) {
+        const { error } = await clientSupabase.from('pengeluaran').delete().eq('id', id);
+        if (!error) {
+          fetchAllData();
+        } else {
+          alert('Gagal menghapus data dari server cloud!');
+        }
       }
     };
 
-    updateDashboard();
+    fetchAllData();
   </script>
 </body>
 </html>
