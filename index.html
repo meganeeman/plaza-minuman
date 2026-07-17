@@ -530,17 +530,18 @@
       .search-input { width: 100%; }
     }
 
-    /* --- FORMULASI SAKTI PRINT PDF --- */
+    /* --- FORMULASI SAKTI PRINT PDF (AESTHETIC EXECUTIVE THEME) --- */
     @media print {
-      /* Sembunyikan Navigasi Atas dan Elemen Aksi yang Tidak Perlu */
+      /* Sembunyikan elemen navigasi & aksi */
       .navbar, .btn-pdf, .btn-delete, th:last-child, td:last-child, input, button {
         display: none !important;
       }
 
-      /* Ubah Margin Wadah Utama Agar Pas di Kertas A4 */
       body {
         background-color: #ffffff !important;
-        color: #000000 !important;
+        color: #0f172a !important;
+        -webkit-print-color-adjust: exact !important; /* Paksa browser cetak warna background */
+        print-color-adjust: exact !important;
       }
 
       .container {
@@ -549,33 +550,93 @@
         margin: 0 !important;
       }
 
-      /* Sesuaikan Desain Kartu Keuangan Biar Gak Tabrakan dengan Kertas Putih */
-      .stat-card, .card {
+      /* Manipulasi Header Block agar mirip Kop Surat Digital */
+      .header-block {
+        background-color: #0b0f19 !important;
+        margin: -20mm -15mm 25px -15mm !important;
+        padding: 25px 15mm !important;
+        border-bottom: 3px solid #38bdf8 !important;
+        display: block !important;
+      }
+
+      h1 {
+        color: #ffffff !important;
+        font-size: 22pt !important;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .subtitle {
+        color: #94a3b8 !important;
+        font-size: 10pt !important;
+        margin-top: 5px;
+      }
+
+      /* Menyisipkan Info Tambahan Autentikasi */
+      .header-block::after {
+        content: "Laporan Keuangan Real-time | Dibuat otomatis oleh Sistem Dasbor Plaza Minuman (Supabase Verified)";
+        display: block;
+        font-size: 8pt;
+        color: #64748b;
+        margin-top: 15px;
+        border-top: 1px solid rgba(255,255,255,0.1);
+        padding-top: 8px;
+      }
+
+      /* Desain Kartu Statistik yang Mewah & Berwarna */
+      .summary-grid {
+        gap: 15px !important;
+        margin-bottom: 25px !important;
+      }
+
+      .stat-card {
         background: #f8fafc !important;
-        border: 1px solid #cbd5e1 !important;
-        color: #0f172a !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 12px !important;
+        padding: 16px !important;
         box-shadow: none !important;
         page-break-inside: avoid;
       }
 
-      .subtitle, .stat-card h3, th {
-        color: #475569 !important;
+      .stat-card h3 { color: #64748b !important; font-size: 9pt !important; }
+      .stat-card .value { font-size: 18pt !important; font-weight: bold !important; margin-bottom: 5px !important; }
+      
+      .stat-card.saldo .value { color: #10b981 !important; }
+      .stat-card.pemasukan .value { color: #38bdf8 !important; }
+      .stat-card.pengeluaran .value { color: #ef4444 !important; }
+
+      .bank-item { font-size: 10px !important; }
+      .bank-name { color: #64748b !important; }
+      .bank-val { color: #0f172a !important; }
+
+      /* Desain Grafik & Tabel yang Tegas */
+      .card {
+        background: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 12px !important;
+        padding: 20px !important;
+        page-break-inside: avoid;
       }
 
-      h1, h2, .stat-card .value, td {
-        color: #0f172a !important;
-      }
+      h2 { color: #0b0f19 !important; font-size: 13pt !important; border-left: 4px solid #38bdf8; padding-left: 8px; }
 
-      /* Rapikan tabel untuk dokumen cetak */
-      table, th, td {
-        border-color: #cbd5e1 !important;
-      }
-
+      table { border: 1px solid #e2e8f0 !important; }
       th {
-        background-color: #f1f5f9 !important;
+        background-color: #0b0f19 !important;
+        color: #ffffff !important;
+        font-weight: bold !important;
+        font-size: 9pt !important;
+        padding: 10px !important;
       }
+      td {
+        padding: 10px !important;
+        font-size: 9pt !important;
+        color: #334155 !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+      }
+      tr:nth-child(even) td { background-color: #f8fafc !important; }
 
-      /* Atur Ukuran Lembar Cetak */
+      /* Pengaturan Ukuran Kertas */
       @page {
         size: A4;
         margin: 20mm 15mm;
