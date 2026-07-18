@@ -1419,7 +1419,7 @@
       setInterval(() => {
         const sekarang = new Date();
         const opsiTanggal = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        const tanggalFormatted = Clinical = sekarang.toLocaleDateString('id-ID', opsiTanggal);
+        const tanggalFormatted = sekarang.toLocaleDateString('id-ID', opsiTanggal);
         const jamFormatted = sekarang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         clockElement.innerHTML = `<span style="color: #10b981; animation: pulse 2s infinite;">●</span> ${tanggalFormatted} | ${jamFormatted} WIB`;
       }, 1000);
@@ -1520,8 +1520,8 @@
     });
 
     window.hapusPemasukan = async function(id) {
-      if (activeRole === 'owner' || activeRole === 'admin_cabang') {
-        alert('Akses ditolak: Akun Anda tidak diizinkan menghapus data.');
+      if (activeRole === 'owner' || activeRole === 'admin_cabang' || activeRole === 'admin') {
+        alert('Akses ditolak: Hanya Akun Master yang diizinkan menghapus data dari server cloud.');
         return;
       }
       
@@ -1536,8 +1536,8 @@
     };
 
     window.hapusPengeluaran = async function(id) {
-      if (activeRole === 'owner' || activeRole === 'admin_cabang') {
-        alert('Akses ditolak: Akun Anda tidak diizinkan menghapus data.');
+      if (activeRole === 'owner' || activeRole === 'admin_cabang' || activeRole === 'admin') {
+        alert('Akses ditolak: Hanya Akun Master yang diizinkan menghapus data dari server cloud.');
         return;
       }
 
@@ -1552,8 +1552,8 @@
     };
 
     window.hapusLaporanCabang = async function(id) {
-      if (activeRole === 'owner' || activeRole === 'admin_cabang') {
-        alert('Akses ditolak: Hanya Master Akun yang diizinkan menghapus data laporan cabang.');
+      if (activeRole === 'owner' || activeRole === 'admin_cabang' || activeRole === 'admin') {
+        alert('Akses ditolak: Hanya Akun Master yang diizinkan menghapus data laporan cabang.');
         return;
       }
 
