@@ -178,7 +178,12 @@
           localStorage.setItem('current_admin', data.username);
           localStorage.setItem('admin_role', data.role);
           localStorage.setItem('admin_name', data.nama_lengkap);
-          window.location.href = 'index.html';
+          
+          if (data.role === 'admin_cabang') {
+            window.location.href = 'cabang.html';
+          } else {
+            window.location.href = 'index.html';
+          }
         }
       } catch (err) {
         console.error(err);
