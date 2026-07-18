@@ -92,6 +92,15 @@
       font-weight: 600;
     }
 
+    .nav-menu a.hub-btn {
+      color: #a855f7;
+      border: 1px solid rgba(168, 85, 247, 0.2);
+    }
+
+    .nav-menu a.hub-btn:hover {
+      background-color: rgba(168, 85, 247, 0.1);
+    }
+
     .nav-menu a.logout-btn {
       color: var(--danger);
       border: 1px solid rgba(239, 68, 68, 0.2);
@@ -375,9 +384,16 @@
     const activeRole = localStorage.getItem('admin_role'); 
     const activeName = localStorage.getItem('admin_name');
 
-    if (!activeAdmin || activeRole !== 'admin_cabang') {
+    if (!activeAdmin || (activeRole !== 'admin_cabang' && activeRole !== 'master')) {
       window.location.href = 'login.html';
     }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (activeRole === 'master') {
+        const backBtn = `<li><a href="index.html" class="hub-btn">Kembali Ke Hub</a></li>`;
+        document.querySelector('.nav-menu').insertAdjacentHTML('beforeend', backBtn);
+      }
+    });
   </script>
 
   <nav class="navbar">
@@ -796,7 +812,7 @@
 
     document.getElementById('form-setor-bank').addEventListener('submit', async function(e) {
       e.preventDefault();
-      if (!confirm('Apakah uang tunai sudah benar-benar disetorkan secara fisik ke ATM / Bank?')) return;
+      if (!confirm('Apakah Uang tunai sudah benar-benar disetorkan secara fisik ke ATM / Bank?')) return;
 
       const btn = this.querySelector('button[type="submit"]');
       btn.disabled = true;
