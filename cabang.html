@@ -133,7 +133,14 @@
       color: var(--text-main);
     }
 
-    .card {
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card, .card {
       background: rgba(21, 29, 48, 0.35) !important;
       backdrop-filter: blur(20px) !important;
       -webkit-backdrop-filter: blur(20px) !important;
@@ -143,6 +150,48 @@
       position: relative;
       overflow: hidden;
       box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    .stat-card {
+      margin-bottom: 0;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+    }
+
+    .stat-card.omset::before { background-color: var(--accent); }
+    .stat-card.transaksi::before { background-color: #a855f7; }
+    .stat-card.cash::before { background-color: var(--success); }
+    .stat-card.bank::before { background-color: #eab308; }
+
+    .stat-card h3 {
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 8px;
+    }
+
+    .stat-card .value {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-top: 4px;
+    }
+
+    .stat-card.omset .value { color: var(--accent); }
+    .stat-card.transaksi .value { color: #c084fc; }
+    .stat-card.cash .value { color: var(--success); }
+    .stat-card.bank .value { color: #fde047; }
+
+    .card {
       margin-bottom: 30px;
     }
 
@@ -314,7 +363,26 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="summary-grid">
+        <div class="stat-card omset">
+          <h3>Total Omset Harian</h3>
+          <div class="value" id="disp-total-omset">Rp 0</div>
+        </div>
+        <div class="stat-card transaksi">
+          <h3>Total Transaksi</h3>
+          <div class="value" id="disp-total-transaksi">0 Baris</div>
+        </div>
+        <div class="stat-card cash">
+          <h3>Sisa Cash Aktual</h3>
+          <div class="value" id="disp-sisa-cash">Rp 0</div>
+        </div>
+        <div class="stat-card bank">
+          <h3>Saldo Rekening BRI</h3>
+          <div class="value" id="disp-saldo-rekening">Rp 0</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 30px;">
         <form id="form-cabang">
           <div class="form-group">
             <label for="tgl-cabang">Tanggal Transaksi</label>
@@ -459,11 +527,38 @@
         const { data, error } = await clientSupabase.from('laporan_cabang').select('*').order('tanggal', { ascending: false });
         if (!error) {
           dataCabang = data || [];
+          calculateStats();
           renderCabangTable();
         }
       } catch (err) {
         console.error(err);
       }
+    }
+
+    function calculateStats() {
+      let totalOmset = 0;
+      let totalCashAktual = 0;
+      let totalOutCash = 0;
+      let totalTransferBRI = 0;
+      let totalSetoranBank = 0;
+      let totalOutTransfer = 0;
+
+      dataCabang.forEach(item => {
+        totalOmset += (item.omset || 0);
+        totalCashAktual += (item.cash_aktual || 0);
+        totalOutCash += (item.pengeluaran_cash || 0);
+        totalTransferBRI += (item.jumlah_transfer || 0);
+        totalSetoranBank += (item.setoran_bank || 0);
+        totalOutTransfer += (item.pengeluaran_transfer || 0);
+      });
+
+      const sisaCash = totalCashAktual - totalOutCash;
+      const saldoRekening = (totalTransferBRI + totalSetoranBank) - totalOutTransfer;
+
+      document.getElementById('disp-total-omset').innerText = formatRupiah(totalOmset);
+      document.getElementById('disp-total-transaksi').innerText = `${dataCabang.length} Baris`;
+      document.getElementById('disp-sisa-cash').innerText = formatRupiah(sisaCash);
+      document.getElementById('disp-saldo-rekening').innerText = formatRupiah(saldoRekening);
     }
 
     function renderCabangTable() {
