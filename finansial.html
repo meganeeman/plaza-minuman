@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plaza Minuman - Dashboard Finansial</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg-primary: #060913;
+      --bg-secondary: rgba(21, 29, 48, 0.4);
+      --bg-card: #1e293b;
+      --accent: #38bdf8;
+      --accent-hover: #0ea5e9;
+      --text-main: #f8fafc;
+      --text-muted: #64748b;
+      --success: #10b981;
+      --danger: #ef4444;
+      --border: rgba(255, 255, 255, 0.04);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      background-image: radial-gradient(circle at top right, rgba(56, 189, 248, 0.02), transparent 400px);
+    }
+
+    .navbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      height: 75px;
+      background-color: rgba(6, 9, 19, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 1000;
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.5px;
+    }
+
+    .logo span {
+      color: var(--accent);
+    }
+
+    .nav-menu {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      list-style: none;
+    }
+
+    .nav-menu a {
+      display: flex;
+      align-items: center;
+      color: rgba(248, 250, 252, 0.6);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 10px 16px;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .nav-menu a:hover {
+      color: var(--text-main);
+      background-color: rgba(255, 255, 255, 0.03);
+    }
+
+    .nav-menu a.active-link {
+      color: var(--bg-primary);
+      background-color: var(--accent);
+      font-weight: 600;
+    }
+
+    .nav-menu a.hub-btn {
+      color: #a855f7;
+      border: 1px solid rgba(168, 85, 247, 0.2);
+    }
+
+    .nav-menu a.hub-btn:hover {
+      background-color: rgba(168, 85, 247, 0.1);
+    }
+
+    .container {
+      padding: 115px 40px 60px 40px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .page-section {
+      display: none;
+    }
+
+    .page-section.active-page {
+      display: block;
+      animation: pageReveal 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes pageReveal {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .header-block {
+      margin-bottom: 35px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .header-text {
+      flex: 1;
+      min-width: 280px;
+    }
+
+    .btn-pdf {
+      background-color: rgba(255, 255, 255, 0.02);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 10px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-pdf:hover {
+      background-color: rgba(56, 189, 248, 0.08);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
+    h2 {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card, .card {
+      background: rgba(21, 29, 48, 0.35) !important;
+      backdrop-filter: blur(20px) !important;
+      -webkit-backdrop-filter: blur(20px) !important;
+      border: 1px solid rgba(255, 255, 255, 0.05) !important;
+      padding: 24px;
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+    }
+
+    .stat-card.saldo::before { background-color: var(--success); }
+    .stat-card.pemasukan::before { background-color: var(--accent); }
+    .stat-card.pengeluaran::before { background-color: var(--danger); }
+
+    .stat-card h3 {
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 8px;
+    }
+
+    .stat-card .value {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 16px;
+    }
+
+    .stat-card.saldo .value { color: var(--success); }
+    .stat-card.pemasukan .value { color: var(--accent); }
+    .stat-card.pengeluaran .value { color: var(--danger); }
+
+    .bank-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.03);
+      padding-top: 12px;
+    }
+
+    .bank-item {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+    }
+
+    .bank-name {
+      color: rgba(248, 250, 252, 0.45);
+    }
+
+    .bank-val {
+      font-weight: 600;
+      color: rgba(248, 250, 252, 0.9);
+    }
+
+    .grid-dashboard-bottom {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 35px;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 380px;
+      width: 100%;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      transition: all 0.2s;
+    }
+
+    .form-group input:focus, .form-group select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      margin-bottom: 10px;
+    }
+
+    button[type="submit"] {
+      background: var(--accent);
+      color: var(--bg-primary);
+      border: none;
+      padding: 16px 24px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      width: 100%;
+      transition: all 0.2s;
+    }
+
+    button[type="submit"]:hover {
+      background: var(--accent-hover);
+    }
+
+    .table-header-flex {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .search-input {
+      padding: 8px 14px;
+      font-size: 13px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      width: 220px;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background-color: var(--bg-primary);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+
+    th {
+      background-color: rgba(255, 255, 255, 0.01);
+      color: #94a3b8;
+      font-weight: 500;
+      font-size: 13px;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .btn-delete {
+      background-color: rgba(239, 68, 68, 0.08);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.15);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .btn-delete:hover {
+      background-color: var(--danger);
+      color: var(--text-main);
+      border-color: var(--danger);
+    }
+
+    .period-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .period-table td {
+      padding: 12px 15px;
+    }
+
+    .admin-badge {
+      font-size: 11px;
+      background: rgba(56, 189, 248, 0.08);
+      color: var(--accent);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    @media (max-width: 900px) {
+      .navbar { padding: 0 20px; }
+      .container { padding: 105px 20px 40px 20px; }
+      .grid-dashboard-bottom { grid-template-columns: 1fr; }
+      .table-header-flex { flex-direction: column; align-items: flex-start; }
+      .search-input { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <script>
+    const activeAdmin = localStorage.getItem('current_admin');
+    const activeRole = localStorage.getItem('admin_role'); 
+    const activeName = localStorage.getItem('admin_name');
+
+    if (!activeAdmin || (activeRole !== 'master' && activeRole !== 'owner')) {
+      window.location.href = 'login.html';
+    }
+
+    if (activeRole === 'owner') {
+      window.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('form-pemasukan').style.display = 'none';
+        document.getElementById('form-pengeluaran').style.display = 'none';
+        const infoMsg = '<div style="background:rgba(56,189,248,0.1); padding:15px; border-radius:10px; color:#38bdf8; margin-bottom:20px; font-size:14px; text-align:center;">Mode Peninjauan: Anda masuk sebagai Owner (Akses Baca Saja)</div>';
+        document.getElementById('page-pemasukan').insertAdjacentHTML('afterbegin', infoMsg);
+        document.getElementById('page-pengeluaran').insertAdjacentHTML('afterbegin', infoMsg);
+      });
+    }
+  </script>
+
+  <nav class="navbar">
+    <div class="logo">Plaza <span>Minuman</span></div>
+    <ul class="nav-menu">
+      <li><a href="#" class="nav-link active-link" data-target="page-dashboard">Dashboard</a></li>
+      <li><a href="#" class="nav-link" data-target="page-pemasukan">Input Pemasukan</a></li>
+      <li><a href="#" class="nav-link" data-target="page-pengeluaran">Input Pengeluaran</a></li>
+      <li><a href="index.html" class="hub-btn">Kembali Ke Hub</a></li>
+    </ul>
+  </nav>
+
+  <div class="container">
+
+    <section id="page-dashboard" class="page-section active-page">
+      <div class="header-block">
+        <div class="header-text">
+          <h1>Dashboard Finansial</h1>
+          <div class="subtitle">Halo, <span id="welcome-admin" style="color:var(--accent); font-weight:600;"></span>! Rekap keuangan konsolidasi pusat.</div>
+          <div id="live-clock" style="font-size: 12px; color: #64748b; margin-top: 8px;">● Memuat waktu server...</div>
+        </div>
+        <button onclick="window.print()" class="btn-pdf">Cetak Laporan PDF</button>
+      </div>
+      
+      <div class="summary-grid">
+        <div class="stat-card saldo">
+          <h3>Total Sisa Saldo</h3>
+          <div class="value" id="total-saldo-display">Rp 0</div>
+          <div class="bank-list">
+            <div class="bank-item"><span class="bank-name">BRI</span><span class="bank-val" id="saldo-bri">Rp 0</span></div>
+            <div class="bank-item"><span class="bank-name">BNI</span><span class="bank-val" id="saldo-bni">Rp 0</span></div>
+            <div class="bank-item"><span class="bank-name">BCA</span><span class="bank-val" id="saldo-bca">Rp 0</span></div>
+            <div class="bank-item"><span class="bank-name">BSI</span><span class="bank-val" id="saldo-bsi">Rp 0</span></div>
+          </div>
+        </div>
+        <div class="stat-card pemasukan">
+          <h3>Total Pemasukan</h3>
+          <div class="value" id="total-pemasukan-display">Rp 0</div>
+          <div class="bank-list">
+            <div class="bank-item"><span class="bank-name">BRI</span><span class="bank-val" id="in-total-bri">Rp 0</span></div>
+            <div class="bank-item"><span class="bank-name">BNI</span><span class="bank-val" id="in-total-bni">Rp 0</span></div>
+            <div class="bank-item"><span class="bank-name">BCA</span><span class="bank-val" id="in-total-bca">Rp 0</span></div>
+            <div class="bank-item"><span class="bank-name">BSI</span><span class="bank-val" id="in-total-bsi">Rp 0</span></div>
+          </div>
+        </div>
+        <div class="stat-card pengeluaran">
+          <h3>Total Pengeluaran</h3>
+          <div class="value" id="total-pengeluaran-display">Rp 0</div>
+          <div class="bank-list">
+            <div class="bank-item"><span class="bank-name">BRI</span><span class="bank-val" id="out-total-bri">Rp 0</span></div>
+            <div class="bank-item"><span class="bank-name">BNI</span><span class="bank-val" id="out-total-bni">Rp 0</span></div>
+            <div class="bank-item"><span class="bank-name">BCA</span><span class="bank-val" id="out-total-bca">Rp 0</span></div>
+            <div class="bank-item"><span class="bank-name">BSI</span><span class="bank-val" id="out-total-bsi">Rp 0</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-dashboard-bottom">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>Analisis & Tren Finansial</h2>
+            <div class="chart-filters">
+              <button onclick="changeChartPeriod('day')" class="btn-filter" style="background: var(--accent); padding: 4px 8px; border-radius:4px; cursor:pointer; font-size:12px;">Overview</button>
+              <button onclick="changeChartPeriod('week')" class="btn-filter" style="background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius:4px; cursor:pointer; font-size:12px; color:var(--text-muted); border:1px solid var(--border)">7 Hari</button>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="financeChart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Aktivitas Berdasarkan Periode</h2>
+          <div class="table-responsive">
+            <table class="period-table">
+              <thead>
+                <tr>
+                  <th>Periode</th>
+                  <th>Pemasukan</th>
+                  <th>Pengeluaran</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Hari Ini</strong></td>
+                  <td id="period-in-day" style="color:var(--accent);">Rp 0</td>
+                  <td id="period-out-day" style="color:var(--danger);">Rp 0</td>
+                </tr>
+                <tr>
+                  <td><strong>Minggu Ini (7 hr)</strong></td>
+                  <td id="period-in-week" style="color:var(--accent);">Rp 0</td>
+                  <td id="period-out-week" style="color:var(--danger);">Rp 0</td>
+                </tr>
+                <tr>
+                  <td><strong>Bulan Ini (30 hr)</strong></td>
+                  <td id="period-in-month" style="color:var(--accent);">Rp 0</td>
+                  <td id="period-out-month" style="color:var(--danger);">Rp 0</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="page-pemasukan" class="page-section">
+      <div class="header-block">
+        <div class="header-text">
+          <h1>Catat Pemasukan</h1>
+          <div class="subtitle">Manajemen kas masuk rekening pusat.</div>
+        </div>
+      </div>
+      <div class="card">
+        <form id="form-pemasukan">
+          <div class="form-group">
+              <label for="tgl-pemasukan">Tanggal Transaksi</label>
+              <input type="date" id="tgl-pemasukan" onclick="this.showPicker()" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="in-bri">BRI (Rp)</label>
+              <input type="text" id="in-bri" class="rupiah-mask" value="Rp 0">
+            </div>
+            <div class="form-group">
+              <label for="in-bni">BNI (Rp)</label>
+              <input type="text" id="in-bni" class="rupiah-mask" value="Rp 0">
+            </div>
+            <div class="form-group">
+              <label for="in-bca">BCA (Rp)</label>
+              <input type="text" id="in-bca" class="rupiah-mask" value="Rp 0">
+            </div>
+            <div class="form-group">
+              <label for="in-bsi">BSI (Rp)</label>
+              <input type="text" id="in-bsi" class="rupiah-mask" value="Rp 0">
+            </div>
+          </div>
+          <button type="submit">Simpan Transaksi Pemasukan</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="table-header-flex">
+          <h2>Log Transaksi Masuk</h2>
+          <input type="text" id="search-pemasukan" class="search-input" placeholder="Cari tanggal...">
+        </div>
+        <div class="table-responsive">
+          <table id="table-pemasukan">
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>BRI</th>
+                <th>BNI</th>
+                <th>BCA</th>
+                <th>BSI</th>
+                <th>Admin</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="page-pengeluaran" class="page-section">
+      <div class="header-block">
+        <div class="header-text">
+          <h1>Catat Pengeluaran</h1>
+          <div class="subtitle">Dokumentasi transaksi dana keluar rekening pusat.</div>
+        </div>
+      </div>
+      <div class="card">
+        <form id="form-pengeluaran">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="tgl-pengeluaran">Tanggal Transaksi</label>
+              <input type="date" id="tgl-pengeluaran" onclick="this.showPicker()" required>
+            </div>
+            <div class="form-group">
+              <label for="deskripsi-out">Deskripsi Transaksi</label>
+              <input type="text" id="deskripsi-out" placeholder="Contoh: Pembelian Bahan Baku" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="select-bank">Pilih Rekening Bank</label>
+              <select id="select-bank" required>
+                <option value="BRI">BRI</option>
+                <option value="BNI">BNI</option>
+                <option value="BCA">BCA</option>
+                <option value="BSI">BSI</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="jumlah-out">Nominal (Rp)</label>
+              <input type="text" id="jumlah-out" class="rupiah-mask" value="Rp 0" required>
+            </div>
+          </div>
+          <button type="submit">Simpan Transaksi Pengeluaran</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="table-header-flex">
+          <h2>Log Transaksi Keluar</h2>
+          <input type="text" id="search-pengeluaran" class="search-input" placeholder="Cari deskripsi...">
+        </div>
+        <div class="table-responsive">
+          <table id="table-pengeluaran">
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Deskripsi</th>
+                <th>Bank</th>
+                <th>Jumlah</th>
+                <th>Admin</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://vccwscybnhpatjioixfx.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_blMwzDZ5pM1TciQzhsg8UQ_cCB_ixOQ";
+    const clientSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    document.getElementById('welcome-admin').innerText = activeName || activeAdmin;
+
+    const navLinks = document.querySelectorAll('.nav-link');
+    const pages = document.querySelectorAll('.page-section');
+
+    navLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        navLinks.forEach(l => l.classList.remove('active-link'));
+        link.classList.add('active-link');
+        const target = link.getAttribute('data-target');
+        pages.forEach(p => {
+          if(p.id === target) p.classList.add('active-page');
+          else p.classList.remove('active-page');
+        });
+      });
+    });
+
+    let dataPemasukan = [];
+    let dataPengeluaran = [];
+    let financeChart = null;
+    let currentChartPeriod = 'day';
+
+    const formatRupiah = (angka) => 'Rp ' + parseInt(angka).toLocaleString('id-ID');
+    const cleanRupiahValue = (str) => parseFloat(str.replace(/[^0-9]/g, '')) || 0;
+    const formatInputRupiah = (val) => {
+      const number = val.replace(/[^0-9]/g, '');
+      if (!number) return 'Rp 0';
+      return 'Rp ' + parseInt(number).toLocaleString('id-ID');
+    };
+
+    document.querySelectorAll('.rupiah-mask').forEach(input => {
+      input.addEventListener('focus', function() { if (this.value === 'Rp 0') this.value = ''; });
+      input.addEventListener('blur', function() { if (this.value === '') this.value = 'Rp 0'; });
+      input.addEventListener('input', function() {
+        const cursor = this.selectionStart;
+        const oldLen = this.value.length;
+        this.value = formatInputRupiah(this.value);
+        this.setSelectionRange(cursor + (this.value.length - oldLen), cursor + (this.value.length - oldLen));
+      });
+    });
+
+    async function fetchAllData() {
+      try {
+        const resIn = await clientSupabase.from('pemasukan').select('*').order('tanggal', { ascending: false });
+        const resOut = await clientSupabase.from('pengeluaran').select('*').order('tanggal', { ascending: false });
+        if (!resIn.error) dataPemasukan = resIn.data || [];
+        if (!resOut.error) dataPengeluaran = resOut.data || [];
+        updateDashboardDisplay();
+      } catch (err) { console.error(err); }
+    }
+
+    function updateDashboardDisplay() {
+      let totalIn = 0; let totalOut = 0;
+      let inBri = 0, inBni = 0, inBca = 0, inBsi = 0;
+      let outBri = 0, outBni = 0, outBca = 0, outBsi = 0;
+
+      const filterIn = document.getElementById('search-pemasukan').value.toLowerCase();
+      const tbodyIn = document.querySelector('#table-pemasukan tbody');
+      tbodyIn.innerHTML = '';
+
+      dataPemasukan.forEach((item) => {
+        const rowTotal = (item.bri || 0) + (item.bni || 0) + (item.bca || 0) + (item.bsi || 0);
+        totalIn += rowTotal;
+        inBri += (item.bri || 0); inBni += (item.bni || 0); inBca += (item.bca || 0); inBsi += (item.bsi || 0);
+        if (item.tanggal.includes(filterIn)) {
+          tbodyIn.innerHTML += `
+            <tr>
+              <td>${item.tanggal}</td>
+              <td>${formatRupiah(item.bri || 0)}</td>
+              <td>${formatRupiah(item.bni || 0)}</td>
+              <td>${formatRupiah(item.bca || 0)}</td>
+              <td>${formatRupiah(item.bsi || 0)}</td>
+              <td><span class="admin-badge">${item.admin || 'System'}</span></td>
+              <td><button class="btn-delete" onclick="hapusPemasukan(${item.id})">Hapus</button></td>
+            </tr>
+          `;
+        }
+      });
+
+      const filterOut = document.getElementById('search-pengeluaran').value.toLowerCase();
+      const tbodyOut = document.querySelector('#table-pengeluaran tbody');
+      tbodyOut.innerHTML = '';
+
+      dataPengeluaran.forEach((item) => {
+        const amt = item.jumlah || 0;
+        totalOut += amt;
+        if (item.bank === 'BRI') outBri += amt;
+        if (item.bank === 'BNI') outBni += amt;
+        if (item.bank === 'BCA') outBca += amt;
+        if (item.bank === 'BSI') outBsi += amt;
+
+        if (item.deskripsi.toLowerCase().includes(filterOut)) {
+          tbodyOut.innerHTML += `
+            <tr>
+              <td>${item.tanggal}</td>
+              <td>${item.deskripsi}</td>
+              <td>${item.bank}</td>
+              <td>${formatRupiah(amt)}</td>
+              <td><span class="admin-badge">${item.admin || 'System'}</span></td>
+              <td><button class="btn-delete" onclick="hapusPengeluaran(${item.id})">Hapus</button></td>
+            </tr>
+          `;
+        }
+      });
+
+      document.getElementById('total-pemasukan-display').innerText = formatRupiah(totalIn);
+      document.getElementById('total-pengeluaran-display').innerText = formatRupiah(totalOut);
+      document.getElementById('total-saldo-display').innerText = formatRupiah(totalIn - totalOut);
+
+      document.getElementById('saldo-bri').innerText = formatRupiah(inBri - outBri);
+      document.getElementById('saldo-bni').innerText = formatRupiah(inBni - outBni);
+      document.getElementById('saldo-bca').innerText = formatRupiah(inBca - outBca);
+      document.getElementById('saldo-bsi').innerText = formatRupiah(inBsi - outBsi);
+
+      document.getElementById('in-total-bri').innerText = formatRupiah(inBri);
+      document.getElementById('out-total-bri').innerText = formatRupiah(outBri);
+
+      calculatePeriodStats();
+      updateChart();
+    }
+
+    window.hapusPemasukan = async function(id) {
+      if (activeRole !== 'master') { alert('Akses ditolak: Hanya Akun Master yang diizinkan menghapus data.'); return; }
+      if (confirm('Hapus transaksi ini?')) {
+        const { error } = await clientSupabase.from('pemasukan').delete().eq('id', id);
+        if (!error) fetchAllData();
+      }
+    };
+
+    window.hapusPengeluaran = async function(id) {
+      if (activeRole !== 'master') { alert('Akses ditolak: Hanya Akun Master yang diizinkan menghapus data.'); return; }
+      if (confirm('Hapus transaksi ini?')) {
+        const { error } = await clientSupabase.from('pengeluaran').delete().eq('id', id);
+        if (!error) fetchAllData();
+      }
+    };
+
+    document.getElementById('form-pemasukan').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const baru = {
+        tanggal: document.getElementById('tgl-pemasukan').value,
+        bri: cleanRupiahValue(document.getElementById('in-bri').value),
+        bni: cleanRupiahValue(document.getElementById('in-bni').value),
+        bca: cleanRupiahValue(document.getElementById('in-bca').value),
+        bsi: cleanRupiahValue(document.getElementById('in-bsi').value),
+        admin: activeName || activeAdmin
+      };
+      const { error } = await clientSupabase.from('pemasukan').insert([baru]);
+      if (!error) { this.reset(); fetchAllData(); }
+    });
+
+    document.getElementById('form-pengeluaran').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const baru = {
+        tanggal: document.getElementById('tgl-pengeluaran').value,
+        deskripsi: document.getElementById('deskripsi-out').value,
+        bank: document.getElementById('select-bank').value,
+        jumlah: cleanRupiahValue(document.getElementById('jumlah-out').value),
+        admin: activeName || activeAdmin
+      };
+      const { error } = await clientSupabase.from('pengeluaran').insert([baru]);
+      if (!error) { this.reset(); fetchAllData(); }
+    });
+
+    function calculatePeriodStats() {
+      let inDay = 0; let outDay = 0;
+      const todayStr = new Date().toISOString().split('T')[0];
+      dataPemasukan.forEach(i => { if(i.tanggal === todayStr) inDay += (i.bri||0)+(i.bni||0)+(i.bca||0)+(i.bsi||0); });
+      dataPengeluaran.forEach(i => { if(i.tanggal === todayStr) outDay += (i.jumlah||0); });
+      document.getElementById('period-in-day').innerText = formatRupiah(inDay);
+      document.getElementById('period-out-day').innerText = formatRupiah(outDay);
+    }
+
+    function updateChart() {
+      const ctx = document.getElementById('financeChart').getContext('2d');
+      if (financeChart) financeChart.destroy();
+      let totalIn = 0; let totalOut = 0;
+      dataPemasukan.forEach(i => totalIn += (i.bri||0)+(i.bni||0)+(i.bca||0)+(i.bsi||0));
+      dataPengeluaran.forEach(i => totalOut += (i.jumlah||0));
+
+      financeChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Total Pemasukan', 'Total Pengeluaran', 'Sisa Kas'],
+          datasets: [{
+            label: 'Nominal Kas Pusat',
+            data: [totalIn, totalOut, totalIn - totalOut],
+            backgroundColor: ['#38bdf8', '#ef4444', '#10b981']
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    function changeChartPeriod(p) { currentChartPeriod = p; updateChart(); }
+
+    document.getElementById('search-pemasukan').addEventListener('input', updateDashboardDisplay);
+    document.getElementById('search-pengeluaran').addEventListener('input', updateDashboardDisplay);
+
+    setInterval(() => {
+      const s = new Date();
+      document.getElementById('live-clock').innerText = `● ${s.toLocaleDateString('id-ID')} | ${s.toLocaleTimeString('id-ID')} WIB`;
+    }, 1000);
+
+    fetchAllData();
+    const tglStr = new Date().toISOString().split('T')[0];
+    document.getElementById('tgl-pemasukan').value = tglStr;
+    document.getElementById('tgl-pengeluaran').value = tglStr;
+  </script>
+</body>
+</html>
