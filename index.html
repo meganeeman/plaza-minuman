@@ -468,12 +468,6 @@
       font-weight: 600;
     }
 
-    @keyframes pulse {
-      0% { opacity: 0.4; }
-      50% { opacity: 1; }
-      100% { opacity: 0.4; }
-    }
-
     @media (max-width: 900px) {
       .navbar { padding: 0 20px; }
       .container { padding: 105px 20px 40px 20px; }
@@ -654,6 +648,7 @@
     if (activeRole === 'admin') {
       window.addEventListener('DOMContentLoaded', () => {
         document.querySelector('[data-target="page-dashboard"]').parentElement.style.display = 'none';
+        document.querySelector('[data-target="page-cabang"]').parentElement.style.display = 'none';
         document.getElementById('page-dashboard').classList.remove('active-page');
         document.getElementById('page-pemasukan').classList.add('active-page');
         document.querySelector('[data-target="page-dashboard"]').classList.remove('active-link');
@@ -668,6 +663,20 @@
         const infoMsg = '<div style="background:rgba(56,189,248,0.1); padding:15px; border-radius:10px; color:#38bdf8; margin-bottom:20px; font-size:14px; text-align:center;">Mode Peninjauan: Anda masuk sebagai Owner (Akses Baca Saja)</div>';
         document.getElementById('page-pemasukan').insertAdjacentHTML('afterbegin', infoMsg);
         document.getElementById('page-pengeluaran').insertAdjacentHTML('afterbegin', infoMsg);
+      });
+    }
+
+    if (activeRole === 'admin_cabang') {
+      window.addEventListener('DOMContentLoaded', () => {
+        document.querySelector('[data-target="page-dashboard"]').parentElement.style.display = 'none';
+        document.querySelector('[data-target="page-pemasukan"]').parentElement.style.display = 'none';
+        document.querySelector('[data-target="page-pengeluaran"]').parentElement.style.display = 'none';
+        
+        document.getElementById('page-dashboard').classList.remove('active-page');
+        document.getElementById('page-cabang').classList.add('active-page');
+        
+        document.querySelector('[data-target="page-dashboard"]').classList.remove('active-link');
+        document.querySelector('[data-target="page-cabang"]').classList.add('active-link');
       });
     }
   </script>
@@ -686,6 +695,7 @@
       <li><a href="#" class="nav-link active-link" data-target="page-dashboard">Dashboard</a></li>
       <li><a href="#" class="nav-link" data-target="page-pemasukan">Input Pemasukan</a></li>
       <li><a href="#" class="nav-link" data-target="page-pengeluaran">Input Pengeluaran</a></li>
+      <li><a href="#" class="nav-link" data-target="page-cabang">Laporan Cabang</a></li>
       <li><a href="#" class="logout-btn" id="logout-trigger">Keluar (Logout)</a></li>
     </ul>
   </nav>
@@ -912,6 +922,84 @@
       </div>
     </section>
 
+    <section id="page-cabang" class="page-section">
+      <div class="header-block">
+        <div class="header-text">
+          <h1>Laporan Keuangan Cabang</h1>
+          <div class="subtitle">Pencatatan data operasional harian terintegrasi khusus cabang (Eksklusif Bank BRI).</div>
+        </div>
+      </div>
+      <div class="card">
+        <form id="form-cabang">
+          <div class="form-group">
+            <label for="tgl-cabang">Tanggal Transaksi</label>
+            <input type="date" id="tgl-cabang" onclick="this.showPicker()" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="cabang-omset">Laporan Omset Harian (Rp)</label>
+              <input type="text" id="cabang-omset" class="rupiah-mask" value="Rp 0" required>
+            </div>
+            <div class="form-group">
+              <label for="cabang-cash-aktual">Cash Aktual Harian (Rp)</label>
+              <input type="text" id="cabang-cash-aktual" class="rupiah-mask" value="Rp 0" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="cabang-jumlah-transfer">Jumlah Transfer Harian via BRI (Rp)</label>
+              <input type="text" id="cabang-jumlah-transfer" class="rupiah-mask" value="Rp 0" required>
+            </div>
+            <div class="form-group">
+              <label for="cabang-setoran-bank">Setoran Cash Aktual ke Bank BRI (Rp)</label>
+              <input type="text" id="cabang-setoran-bank" class="rupiah-mask" value="Rp 0" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="cabang-out-cash">Pengeluaran Harian - CASH (Rp)</label>
+              <input type="text" id="cabang-out-cash" class="rupiah-mask" value="Rp 0" required>
+            </div>
+            <div class="form-group">
+              <label for="cabang-out-transfer">Pengeluaran Harian - TRANSFER BRI (Rp)</label>
+              <input type="text" id="cabang-out-transfer" class="rupiah-mask" value="Rp 0" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="cabang-nota">Tautan Dokumen / Nota Pengeluaran (Opsional)</label>
+            <input type="url" id="cabang-nota" placeholder="https://drive.google.com/..." class="search-input" style="width:100%; height:48px;">
+          </div>
+          <button type="submit">Kirim Laporan Harian Cabang</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="table-header-flex">
+          <h2>Log Transaksi Masuk Cabang</h2>
+          <input type="text" id="search-cabang" class="search-input" placeholder="Cari tanggal laporan...">
+        </div>
+        <div class="table-responsive">
+          <table id="table-cabang">
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Omset</th>
+                <th>Cash Aktual</th>
+                <th>Trf BRI</th>
+                <th>Out Cash</th>
+                <th>Out Trf</th>
+                <th>Setoran Bank</th>
+                <th>Nota</th>
+                <th>Admin</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
   </div>
 
   <script>
@@ -963,6 +1051,7 @@
 
     let dataPemasukan = [];
     let dataPengeluaran = [];
+    let dataCabang = [];
     let financeChart = null;
     let currentChartPeriod = 'day';
 
@@ -1199,9 +1288,11 @@
       try {
         const resIn = await clientSupabase.from('pemasukan').select('*').order('tanggal', { ascending: false });
         const resOut = await clientSupabase.from('pengeluaran').select('*').order('tanggal', { ascending: false });
+        const resCabang = await clientSupabase.from('laporan_cabang').select('*').order('tanggal', { ascending: false });
 
         if (!resIn.error) dataPemasukan = resIn.data || [];
         if (!resOut.error) dataPengeluaran = resOut.data || [];
+        if (!resCabang.error) dataCabang = resCabang.data || [];
 
         updateDashboardDisplay();
       } catch (err) {
@@ -1271,6 +1362,33 @@
         }
       });
 
+      const filterCabang = document.getElementById('search-cabang').value.toLowerCase();
+      const tbodyCabang = document.querySelector('#table-cabang tbody');
+      tbodyCabang.innerHTML = '';
+
+      dataCabang.forEach((item) => {
+        const displayedDate = formatDateWithDay(item.tanggal);
+        const creator = item.admin || 'Cabang';
+        const notaLink = item.nota ? `<a href="${item.nota}" target="_blank" style="color:var(--accent); text-decoration:none;">Buka Nota</a>` : '-';
+
+        if (displayedDate.toLowerCase().includes(filterCabang) || item.tanggal.toLowerCase().includes(filterCabang)) {
+          tbodyCabang.innerHTML += `
+            <tr>
+              <td>${displayedDate}</td>
+              <td>${formatRupiah(item.omset || 0)}</td>
+              <td>${formatRupiah(item.cash_aktual || 0)}</td>
+              <td>${formatRupiah(item.jumlah_transfer || 0)}</td>
+              <td>${formatRupiah(item.pengeluaran_cash || 0)}</td>
+              <td>${formatRupiah(item.pengeluaran_transfer || 0)}</td>
+              <td>${formatRupiah(item.setoran_bank || 0)}</td>
+              <td>${notaLink}</td>
+              <td><span class="admin-badge">${creator}</span></td>
+              <td><button class="btn-delete" onclick="hapusLaporanCabang(${item.id})">Hapus</button></td>
+            </tr>
+          `;
+        }
+      });
+
       const totalSaldo = totalIn - totalOut;
 
       document.getElementById('total-pemasukan-display').innerText = formatRupiah(totalIn);
@@ -1301,7 +1419,7 @@
       setInterval(() => {
         const sekarang = new Date();
         const opsiTanggal = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        const tanggalFormatted = sekarang.toLocaleDateString('id-ID', opsiTanggal);
+        const tanggalFormatted = Clinical = sekarang.toLocaleDateString('id-ID', opsiTanggal);
         const jamFormatted = sekarang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         clockElement.innerHTML = `<span style="color: #10b981; animation: pulse 2s infinite;">●</span> ${tanggalFormatted} | ${jamFormatted} WIB`;
       }, 1000);
@@ -1309,6 +1427,7 @@
 
     document.getElementById('search-pemasukan').addEventListener('input', updateDashboardDisplay);
     document.getElementById('search-pengeluaran').addEventListener('input', updateDashboardDisplay);
+    document.getElementById('search-cabang').addEventListener('input', updateDashboardDisplay);
 
     document.getElementById('form-pemasukan').addEventListener('submit', async function(e) {
       e.preventDefault();
@@ -1367,13 +1486,42 @@
       }
     });
 
-    window.hapusPemasukan = async function(id) {
-      if (activeRole === 'owner') {
-        alert('Akses ditolak: Akun Owner tidak diizinkan menghapus data.');
-        return;
+    document.getElementById('form-cabang').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const btn = this.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.innerText = "Mengirim data...";
+
+      const baru = {
+        tanggal: document.getElementById('tgl-cabang').value,
+        omset: cleanRupiahValue(document.getElementById('cabang-omset').value),
+        cash_aktual: cleanRupiahValue(document.getElementById('cabang-cash-aktual').value),
+        jumlah_transfer: cleanRupiahValue(document.getElementById('cabang-jumlah-transfer').value),
+        setoran_bank: cleanRupiahValue(document.getElementById('cabang-setoran-bank').value),
+        pengeluaran_cash: cleanRupiahValue(document.getElementById('cabang-out-cash').value),
+        pengeluaran_transfer: cleanRupiahValue(document.getElementById('cabang-out-transfer').value),
+        nota: document.getElementById('cabang-nota').value,
+        admin: activeName || activeAdmin
+      };
+
+      const { error } = await clientSupabase.from('laporan_cabang').insert([baru]);
+
+      btn.disabled = false;
+      btn.innerText = "Kirim Laporan Harian Cabang";
+
+      if (!error) {
+        this.reset();
+        document.querySelectorAll('.rupiah-mask').forEach(input => input.value = 'Rp 0');
+        document.getElementById('cabang-nota').value = '';
+        fetchAllData();
+      } else {
+        alert('Gagal menyimpan laporan cabang ke server cloud!');
       }
-      if (activeRole === 'admin') {
-        alert('Akses ditolak: Admin tidak bisa menghapus data. Silakan hubungi Akun Master untuk meminta penghapusan.');
+    });
+
+    window.hapusPemasukan = async function(id) {
+      if (activeRole === 'owner' || activeRole === 'admin_cabang') {
+        alert('Akses ditolak: Akun Anda tidak diizinkan menghapus data.');
         return;
       }
       
@@ -1388,12 +1536,8 @@
     };
 
     window.hapusPengeluaran = async function(id) {
-      if (activeRole === 'owner') {
-        alert('Akses ditolak: Akun Owner tidak diizinkan menghapus data.');
-        return;
-      }
-      if (activeRole === 'admin') {
-        alert('Akses ditolak: Admin tidak bisa menghapus data. Silakan hubungi Akun Master untuk meminta penghapusan.');
+      if (activeRole === 'owner' || activeRole === 'admin_cabang') {
+        alert('Akses ditolak: Akun Anda tidak diizinkan menghapus data.');
         return;
       }
 
@@ -1407,11 +1551,28 @@
       }
     };
 
+    window.hapusLaporanCabang = async function(id) {
+      if (activeRole === 'owner' || activeRole === 'admin_cabang') {
+        alert('Akses ditolak: Hanya Master Akun yang diizinkan menghapus data laporan cabang.');
+        return;
+      }
+
+      if(confirm('Apakah kamu yakin ingin menghapus laporan cabang ini dari cloud server?')) {
+        const { error } = await clientSupabase.from('laporan_cabang').delete().eq('id', id);
+        if (!error) {
+          fetchAllData();
+        } else {
+          alert('Gagal menghapus data laporan cabang dari server cloud!');
+        }
+      }
+    };
+
     fetchAllData();
     startLiveClock();
     const todayString = new Date().toISOString().split('T')[0];
     document.getElementById('tgl-pemasukan').value = todayString;
     document.getElementById('tgl-pengeluaran').value = todayString;
+    document.getElementById('tgl-cabang').value = todayString;
   </script>
 </body>
 </html>
