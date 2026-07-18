@@ -985,38 +985,39 @@
       if (financeChart) { financeChart.destroy(); }
 
       financeChart = new Chart(ctx, {
-      type: 'line',
-     data: {
-     labels: ['Total Pemasukan', 'Total Pengeluaran', 'Sisa Saldo Bersih'],
-      datasets: [{
-      data: [totalIn, totalOut, totalSaldo],
-      backgroundColor: ['rgba(56, 189, 248, 0.2)', 'rgba(239, 68, 68, 0.2)', 'rgba(16, 185, 129, 0.2)'],
-      borderColor: ['#38bdf8', '#ef4444', '#10b981'],
-      borderWidth: 2,
-      borderRadius: 8,
-      borderSkipped: false
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: {
-      mode: 'index',
-      intersect: false
-    },
-    plugins: { legend: { display: false } },
-    scales: {
-      x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
-      y: {
-        grid: { color: 'rgba(255, 255, 255, 0.04)' },
-        ticks: {
-          color: '#94a3b8',
-          callback: function(value) { return 'Rp ' + value.toLocaleString('id-ID'); }
+        type: 'line',
+        data: {
+          labels: ['Total Pemasukan', 'Total Pengeluaran', 'Sisa Saldo Bersih'],
+          datasets: [{
+            data: [totalIn, totalOut, totalSaldo],
+            backgroundColor: ['rgba(56, 189, 248, 0.2)', 'rgba(239, 68, 68, 0.2)', 'rgba(16, 185, 129, 0.2)'],
+            borderColor: ['#38bdf8', '#ef4444', '#10b981'],
+            borderWidth: 2,
+            borderRadius: 8,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.04)' },
+              ticks: {
+                color: '#94a3b8',
+                callback: function(value) { return 'Rp ' + value.toLocaleString('id-ID'); }
+              }
+            }
+          }
         }
-      }
+      });
     }
-  }
-});
 
     function calculatePeriodStats() {
       const today = new Date();
