@@ -152,7 +152,6 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Modifikasi Header Block agar Judul dan Tombol Sejajar */
     .header-block {
       margin-bottom: 35px;
       display: flex;
@@ -167,7 +166,6 @@
       min-width: 280px;
     }
 
-    /* Styling Tombol Cetak PDF Premium */
     .btn-pdf {
       background-color: var(--accent);
       color: var(--bg-primary);
@@ -209,7 +207,6 @@
     h2 {
       font-size: 18px;
       font-weight: 600;
-      margin-bottom: 20px;
       color: var(--text-main);
     }
 
@@ -530,17 +527,15 @@
       .search-input { width: 100%; }
     }
 
-    /* --- FORMULASI SAKTI PRINT PDF (AESTHETIC EXECUTIVE THEME) --- */
     @media print {
-      /* Sembunyikan elemen navigasi & aksi */
-      .navbar, .btn-pdf, .btn-delete, th:last-child, td:last-child, input, button {
+      .navbar, .btn-pdf, .btn-delete, th:last-child, td:last-child, input, button, .chart-filters {
         display: none !important;
       }
 
       body {
         background-color: #ffffff !important;
         color: #0f172a !important;
-        -webkit-print-color-adjust: exact !important; /* Paksa browser cetak warna background */
+        -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
 
@@ -550,7 +545,6 @@
         margin: 0 !important;
       }
 
-      /* Manipulasi Header Block agar mirip Kop Surat Digital */
       .header-block {
         background-color: #0b0f19 !important;
         margin: -20mm -15mm 25px -15mm !important;
@@ -572,7 +566,6 @@
         margin-top: 5px;
       }
 
-      /* Menyisipkan Info Tambahan Autentikasi */
       .header-block::after {
         content: "Laporan Keuangan Real-time | Dibuat otomatis oleh Sistem Dasbor Plaza Minuman (Supabase Verified)";
         display: block;
@@ -583,7 +576,6 @@
         padding-top: 8px;
       }
 
-      /* Desain Kartu Statistik yang Mewah & Berwarna */
       .summary-grid {
         gap: 15px !important;
         margin-bottom: 25px !important;
@@ -609,7 +601,6 @@
       .bank-name { color: #64748b !important; }
       .bank-val { color: #0f172a !important; }
 
-      /* Desain Grafik & Tabel yang Tegas */
       .card {
         background: #ffffff !important;
         border: 1px solid #e2e8f0 !important;
@@ -636,7 +627,6 @@
       }
       tr:nth-child(even) td { background-color: #f8fafc !important; }
 
-      /* Pengaturan Ukuran Kertas */
       @page {
         size: A4;
         margin: 20mm 15mm;
@@ -703,7 +693,6 @@
           <div class="subtitle">Halo, <span id="welcome-admin" style="color:var(--accent); font-weight:600;"></span>! Berikut ringkasan akumulasi saldo keuangan Plaza Minuman.</div>
         </div>
         
-        <!-- 🎯 TOMBOL PREMIUM LIVE DI SINI SEKARANG -->
         <button onclick="window.print()" class="btn-pdf">
           <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
             <path d="M4 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2zm0 1h8a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1"/>
@@ -748,7 +737,14 @@
 
       <div class="grid-dashboard-bottom">
         <div class="card" style="margin-bottom:0;">
-          <h2>Analisis & Tren Finansial</h2>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>Analisis & Tren Finansial</h2>
+            <div class="chart-filters" style="display: flex; gap: 8px;">
+              <button onclick="changeChartPeriod('day')" class="btn-filter" style="background: var(--accent); color: var(--bg-primary); border: none; padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer;">Overview</button>
+              <button onclick="changeChartPeriod('week')" class="btn-filter" style="background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--border); padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer;">7 Hari Terakhir</button>
+              <button onclick="changeChartPeriod('month')" class="btn-filter" style="background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--border); padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer;">30 Hari Terakhir</button>
+            </div>
+          </div>
           <div class="chart-container">
             <canvas id="financeChart"></canvas>
           </div>
@@ -959,6 +955,7 @@
     let dataPemasukan = [];
     let dataPengeluaran = [];
     let financeChart = null;
+    let currentChartPeriod = 'day';
 
     const formatRupiah = (angka) => {
       return 'Rp ' + parseInt(angka).toLocaleString('id-ID');
@@ -980,22 +977,115 @@
       return dateString;
     };
 
-    function updateChart(totalIn, totalOut, totalSaldo) {
+    function changeChartPeriod(period) {
+      currentChartPeriod = period;
+      const buttons = document.querySelectorAll('.btn-filter');
+      buttons.forEach(btn => {
+        if (btn.getAttribute('onclick').includes(period)) {
+          btn.style.background = 'var(--accent)';
+          btn.style.color = 'var(--bg-primary)';
+          btn.style.border = 'none';
+        } else {
+          btn.style.background = 'rgba(255,255,255,0.05)';
+          btn.style.color = 'var(--text-muted)';
+          btn.style.border = '1px solid var(--border)';
+        }
+      });
+      updateChart();
+    }
+
+    function updateChart() {
       const ctx = document.getElementById('financeChart').getContext('2d');
       if (financeChart) { financeChart.destroy(); }
 
+      let labels = [];
+      let datasetIn = [];
+      let datasetOut = [];
+      let datasetSaldo = [];
+
+      const today = new Date();
+      today.setHours(0,0,0,0);
+
+      if (currentChartPeriod === 'day') {
+        labels = ['Total Pemasukan', 'Total Pengeluaran', 'Sisa Saldo Bersih'];
+        let totalIn = 0, totalOut = 0;
+        dataPemasukan.forEach(item => totalIn += (item.bri || 0) + (item.bni || 0) + (item.bca || 0) + (item.bsi || 0));
+        dataPengeluaran.forEach(item => totalOut += (item.jumlah || 0));
+        
+        datasetIn = [totalIn, 0, 0];
+        datasetOut = [0, totalOut, 0];
+        datasetSaldo = [0, 0, totalIn - totalOut];
+      } else {
+        const targetDays = currentChartPeriod === 'week' ? 7 : 30;
+        for (let i = targetDays - 1; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(today.getDate() - i);
+          const dateString = d.toISOString().split('T')[0];
+          
+          const labelFormatted = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+          labels.push(labelFormatted);
+
+          let dayIn = 0;
+          dataPemasukan.forEach(item => {
+            if (item.tanggal === dateString) {
+              dayIn += (item.bri || 0) + (item.bni || 0) + (item.bca || 0) + (item.bsi || 0);
+            }
+          });
+          datasetIn.push(dayIn);
+
+          let dayOut = 0;
+          dataPengeluaran.forEach(item => {
+            if (item.tanggal === dateString) {
+              dayOut += (item.jumlah || 0);
+            }
+          });
+          datasetOut.push(dayOut);
+          datasetSaldo.push(dayIn - dayOut);
+        }
+      }
+
+      const chartDatasets = currentChartPeriod === 'day' ? [
+        {
+          label: 'Nominal',
+          data: [datasetIn[0], datasetOut[1], datasetSaldo[2]],
+          backgroundColor: ['rgba(56, 189, 248, 0.2)', 'rgba(239, 68, 68, 0.2)', 'rgba(16, 185, 129, 0.2)'],
+          borderColor: ['#38bdf8', '#ef4444', '#10b981'],
+          borderWidth: 2,
+          borderRadius: 6
+        }
+      ] : [
+        {
+          label: 'Pemasukan',
+          data: datasetIn,
+          borderColor: '#38bdf8',
+          backgroundColor: 'rgba(56, 189, 248, 0.05)',
+          borderWidth: 2.5,
+          tension: 0.3
+        },
+        {
+          label: 'Pengeluaran',
+          data: datasetOut,
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.05)',
+          borderWidth: 2.5,
+          tension: 0.3
+        },
+        {
+          label: 'Saldo Harian',
+          data: datasetSaldo,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.05)',
+          borderWidth: 2,
+          borderDash: [5, 5],
+          tension: 0.3
+        }
+      ];
+
       financeChart = new Chart(ctx, {
-        type: 'line',
+        type: currentChartPeriod === 'day' ? 'bar' : 'line',
         data: {
-          labels: ['Total Pemasukan', 'Total Pengeluaran', 'Sisa Saldo Bersih'],
-          datasets: [{
-            data: [totalIn, totalOut, totalSaldo],
-            backgroundColor: ['rgba(56, 189, 248, 0.2)', 'rgba(239, 68, 68, 0.2)', 'rgba(16, 185, 129, 0.2)'],
-            borderColor: ['#38bdf8', '#ef4444', '#10b981'],
-            borderWidth: 2,
-            borderRadius: 8,
-            borderSkipped: false
-          }]
+          labels: labels,
+          datasets: chartDatasets
         },
         options: {
           responsive: true,
@@ -1004,13 +1094,19 @@
             mode: 'index',
             intersect: false
           },
-          plugins: { legend: { display: false } },
+          plugins: {
+            legend: {
+              display: currentChartPeriod !== 'day',
+              labels: { color: '#94a3b8', font: { size: 11 } }
+            }
+          },
           scales: {
-            x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+            x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } },
             y: {
               grid: { color: 'rgba(255, 255, 255, 0.04)' },
               ticks: {
                 color: '#94a3b8',
+                font: { size: 11 },
                 callback: function(value) { return 'Rp ' + value.toLocaleString('id-ID'); }
               }
             }
@@ -1156,7 +1252,7 @@
       document.getElementById('saldo-bsi').innerText = formatRupiah(inBsi - outBsi);
 
       calculatePeriodStats();
-      updateChart(totalIn, totalOut, totalSaldo);
+      updateChart();
     }
 
     document.getElementById('search-pemasukan').addEventListener('input', updateDashboardDisplay);
