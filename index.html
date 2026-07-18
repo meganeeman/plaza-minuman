@@ -468,6 +468,12 @@
       font-weight: 600;
     }
 
+    @keyframes pulse {
+      0% { opacity: 0.4; }
+      50% { opacity: 1; }
+      100% { opacity: 0.4; }
+    }
+
     @media (max-width: 900px) {
       .navbar { padding: 0 20px; }
       .container { padding: 105px 20px 40px 20px; }
@@ -691,9 +697,10 @@
         <div class="header-text">
           <h1>Dashboard Finansial</h1>
           <div class="subtitle">Halo, <span id="welcome-admin" style="color:var(--accent); font-weight:600;"></span>! Berikut ringkasan akumulasi saldo keuangan Plaza Minuman.</div>
-            <div id="live-clock" style="font-size: 12px; color: var(--text-muted); margin-top: 8px; display: flex; align-items: center; gap: 6px;">
+          <div id="live-clock" style="font-size: 12px; color: var(--text-muted); margin-top: 8px; display: flex; align-items: center; gap: 6px;">
             <span style="color: var(--accent);">●</span> Memuat waktu server...
           </div>
+        </div>
         
         <button onclick="window.print()" class="btn-pdf">
           <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -1257,6 +1264,17 @@
       updateChart();
     }
 
+    function startLiveClock() {
+      const clockElement = document.getElementById('live-clock');
+      setInterval(() => {
+        const sekarang = new Date();
+        const opsiTanggal = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const tanggalFormatted = sekarang.toLocaleDateString('id-ID', opsiTanggal);
+        const jamFormatted = sekarang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        clockElement.innerHTML = `<span style="color: #10b981; animation: pulse 2s infinite;">●</span> ${tanggalFormatted} | ${jamFormatted} WIB`;
+      }, 1000);
+    }
+
     document.getElementById('search-pemasukan').addEventListener('input', updateDashboardDisplay);
     document.getElementById('search-pengeluaran').addEventListener('input', updateDashboardDisplay);
 
@@ -1356,6 +1374,7 @@
     };
 
     fetchAllData();
+    startLiveClock();
     const todayString = new Date().toISOString().split('T')[0];
     document.getElementById('tgl-pemasukan').value = todayString;
     document.getElementById('tgl-pengeluaran').value = todayString;
