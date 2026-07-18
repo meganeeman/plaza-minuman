@@ -371,14 +371,35 @@
       border-bottom: none;
     }
 
+    .action-btn-group {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-table-edit {
+      background-color: rgba(16, 185, 129, 0.08);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.15);
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .btn-table-edit:hover {
+      background-color: var(--success);
+      color: #060913;
+    }
+
     .btn-delete {
       background-color: rgba(239, 68, 68, 0.08);
       color: var(--danger);
       border: 1px solid rgba(239, 68, 68, 0.15);
-      padding: 8px 16px;
-      border-radius: 8px;
+      padding: 6px 12px;
+      border-radius: 6px;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 500;
       transition: all 0.2s;
     }
@@ -549,6 +570,7 @@
       </div>
       <div class="card">
         <form id="form-pemasukan">
+          <input type="hidden" id="edit-id-pemasukan">
           <div class="form-group">
               <label for="tgl-pemasukan">Tanggal Transaksi</label>
               <input type="date" id="tgl-pemasukan" onclick="this.showPicker()" required>
@@ -571,7 +593,7 @@
               <input type="text" id="in-bsi" class="rupiah-mask" value="Rp 0">
             </div>
           </div>
-          <button type="submit">Simpan Transaksi Pemasukan</button>
+          <button type="submit" id="btn-submit-pemasukan">Simpan Transaksi Pemasukan</button>
         </form>
       </div>
 
@@ -608,6 +630,7 @@
       </div>
       <div class="card">
         <form id="form-pengeluaran">
+          <input type="hidden" id="edit-id-pengeluaran">
           <div class="form-row">
             <div class="form-group">
               <label for="tgl-pengeluaran">Tanggal Transaksi</label>
@@ -633,7 +656,7 @@
               <input type="text" id="jumlah-out" class="rupiah-mask" value="Rp 0" required>
             </div>
           </div>
-          <button type="submit">Simpan Transaksi Pengeluaran</button>
+          <button type="submit" id="btn-submit-pengeluaran">Simpan Transaksi Pengeluaran</button>
         </form>
       </div>
 
@@ -733,6 +756,11 @@
         totalIn += rowTotal;
         inBri += (item.bri || 0); inBni += (item.bni || 0); inBca += (item.bca || 0); inBsi += (item.bsi || 0);
         if (item.tanggal.includes(filterIn)) {
+          let actionButtons = `<button class="btn-table-edit" onclick="pemicuEditPemasukan(${item.id})">Edit</button>`;
+          if (activeRole === 'master') {
+            actionButtons += `<button class="btn-delete" onclick="hapusPemasukan(${item.id})">Hapus</button>`;
+          }
+
           tbodyIn.innerHTML += `
             <tr>
               <td>${item.tanggal}</td>
@@ -741,7 +769,7 @@
               <td>${formatRupiah(item.bca || 0)}</td>
               <td>${formatRupiah(item.bsi || 0)}</td>
               <td><span class="admin-badge">${item.admin || 'System'}</span></td>
-              <td><button class="btn-delete" onclick="hapusPemasukan(${item.id})">Hapus</button></td>
+              <td><div class="action-btn-group">${actionButtons}</div></td>
             </tr>
           `;
         }
@@ -760,6 +788,11 @@
         if (item.bank === 'BSI') outBsi += amt;
 
         if (item.deskripsi.toLowerCase().includes(filterOut)) {
+          let actionButtons = `<button class="btn-table-edit" onclick="pemicuEditPengeluaran(${item.id})">Edit</button>`;
+          if (activeRole === 'master') {
+            actionButtons += `<button class="btn-delete" onclick="hapusPengeluaran(${item.id})">Hapus</button>`;
+          }
+
           tbodyOut.innerHTML += `
             <tr>
               <td>${item.tanggal}</td>
@@ -767,7 +800,7 @@
               <td>${item.bank}</td>
               <td>${formatRupiah(amt)}</td>
               <td><span class="admin-badge">${item.admin || 'System'}</span></td>
-              <td><button class="btn-delete" onclick="hapusPengeluaran(${item.id})">Hapus</button></td>
+              <td><div class="action-btn-group">${actionButtons}</div></td>
             </tr>
           `;
         }
@@ -789,12 +822,37 @@
       updateChart();
     }
 
+    window.pemicuEditPemasukan = function(id) {
+      const target = dataPemasukan.find(i => i.id === id);
+      if (!target) return;
+      document.getElementById('edit-id-pemasukan').value = target.id;
+      document.getElementById('tgl-pemasukan').value = target.tanggal;
+      document.getElementById('in-bri').value = formatRupiah(target.bri || 0);
+      document.getElementById('in-bni').value = formatRupiah(target.bni || 0);
+      document.getElementById('in-bca').value = formatRupiah(target.bca || 0);
+      document.getElementById('in-bsi').value = formatRupiah(target.bsi || 0);
+      document.getElementById('btn-submit-pemasukan').innerText = "Perbarui Transaksi Pemasukan";
+      document.getElementById('page-pemasukan').scrollIntoView({ behavior: 'smooth' });
+    };
+
     window.hapusPemasukan = async function(id) {
       if (activeRole !== 'master') { alert('Akses ditolak: Hanya Akun Master yang diizinkan menghapus data.'); return; }
       if (confirm('Hapus transaksi ini?')) {
         const { error } = await clientSupabase.from('pemasukan').delete().eq('id', id);
         if (!error) fetchAllData();
       }
+    };
+
+    window.pemicuEditPengeluaran = function(id) {
+      const target = dataPengeluaran.find(i => i.id === id);
+      if (!target) return;
+      document.getElementById('edit-id-pengeluaran').value = target.id;
+      document.getElementById('tgl-pengeluaran').value = target.tanggal;
+      document.getElementById('deskripsi-out').value = target.deskripsi || '';
+      document.getElementById('select-bank').value = target.bank || 'BRI';
+      document.getElementById('jumlah-out').value = formatRupiah(target.jumlah || 0);
+      document.getElementById('btn-submit-pengeluaran').innerText = "Perbarui Transaksi Pengeluaran";
+      document.getElementById('page-pengeluaran').scrollIntoView({ behavior: 'smooth' });
     };
 
     window.hapusPengeluaran = async function(id) {
@@ -807,7 +865,12 @@
 
     document.getElementById('form-pemasukan').addEventListener('submit', async function(e) {
       e.preventDefault();
-      const baru = {
+      const idPemasukan = document.getElementById('edit-id-pemasukan').value;
+      const btn = document.getElementById('btn-submit-pemasukan');
+      btn.disabled = true;
+      btn.innerText = "Memproses...";
+
+      const paketData = {
         tanggal: document.getElementById('tgl-pemasukan').value,
         bri: cleanRupiahValue(document.getElementById('in-bri').value),
         bni: cleanRupiahValue(document.getElementById('in-bni').value),
@@ -815,21 +878,58 @@
         bsi: cleanRupiahValue(document.getElementById('in-bsi').value),
         admin: activeName || activeAdmin
       };
-      const { error } = await clientSupabase.from('pemasukan').insert([baru]);
-      if (!error) { this.reset(); fetchAllData(); }
+
+      let hasil;
+      if (idPemasukan) {
+        hasil = await clientSupabase.from('pemasukan').update(paketData).eq('id', idPemasukan);
+      } else {
+        hasil = await clientSupabase.from('pemasukan').insert([paketData]);
+      }
+
+      btn.disabled = false;
+      btn.innerText = "Simpan Transaksi Pemasukan";
+
+      if (!hasil.error) {
+        this.reset();
+        document.getElementById('edit-id-pemasukan').value = '';
+        document.querySelectorAll('.rupiah-mask').forEach(i => i.value = 'Rp 0');
+        fetchAllData();
+        alert('Data pemasukan berhasil diproses!');
+      }
     });
 
     document.getElementById('form-pengeluaran').addEventListener('submit', async function(e) {
       e.preventDefault();
-      const baru = {
+      const idPengeluaran = document.getElementById('edit-id-pengeluaran').value;
+      const btn = document.getElementById('btn-submit-pengeluaran');
+      btn.disabled = true;
+      btn.innerText = "Memproses...";
+
+      const paketData = {
         tanggal: document.getElementById('tgl-pengeluaran').value,
         deskripsi: document.getElementById('deskripsi-out').value,
         bank: document.getElementById('select-bank').value,
         jumlah: cleanRupiahValue(document.getElementById('jumlah-out').value),
         admin: activeName || activeAdmin
       };
-      const { error } = await clientSupabase.from('pengeluaran').insert([baru]);
-      if (!error) { this.reset(); fetchAllData(); }
+
+      let hasil;
+      if (idPengeluaran) {
+        hasil = await clientSupabase.from('pengeluaran').update(paketData).eq('id', idPengeluaran);
+      } else {
+        hasil = await clientSupabase.from('pengeluaran').insert([paketData]);
+      }
+
+      btn.disabled = false;
+      btn.innerText = "Simpan Transaksi Pengeluaran";
+
+      if (!hasil.error) {
+        this.reset();
+        document.getElementById('edit-id-pengeluaran').value = '';
+        document.getElementById('jumlah-out').value = 'Rp 0';
+        fetchAllData();
+        alert('Data pengeluaran berhasil diproses!');
+      }
     });
 
     function calculatePeriodStats() {
