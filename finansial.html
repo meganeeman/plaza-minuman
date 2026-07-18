@@ -518,9 +518,8 @@
         <div class="card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h2>Analisis & Tren Finansial</h2>
-            <div class="chart-filters">
-              <button onclick="changeChartPeriod('day')" class="btn-filter" style="background: var(--accent); padding: 4px 8px; border-radius:4px; cursor:pointer; font-size:12px;">Overview</button>
-              <button onclick="changeChartPeriod('week')" class="btn-filter" style="background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius:4px; cursor:pointer; font-size:12px; color:var(--text-muted); border:1px solid var(--border)">7 Hari</button>
+            <div class="chart-filters" style="display:none;">
+              <button onclick="changeChartPeriod('day')" class="btn-filter">Overview</button>
             </div>
           </div>
           <div class="chart-container">
@@ -955,10 +954,39 @@
           datasets: [{
             label: 'Nominal Kas Pusat',
             data: [totalIn, totalOut, totalIn - totalOut],
-            backgroundColor: ['#38bdf8', '#ef4444', '#10b981']
+            backgroundColor: [
+              'rgba(56, 189, 248, 0.2)',
+              'rgba(239, 68, 68, 0.2)',
+              'rgba(16, 185, 129, 0.2)'
+            ],
+            borderColor: ['#38bdf8', '#ef4444', '#10b981'],
+            borderWidth: 2,
+            borderRadius: 8,
+            hoverBackgroundColor: [
+              'rgba(56, 189, 248, 0.35)',
+              'rgba(239, 68, 68, 0.35)',
+              'rgba(16, 185, 129, 0.35)'
+            ]
           }]
         },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#94a3b8' } }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+            y: { grid: { color: 'rgba(255,255,255,0.02)' }, ticks: { color: '#94a3b8' } }
+          },
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          onHover: (event, chartElement) => {
+            event.native.target.style.cursor = chartElement.length ? 'pointer' : 'default';
+          }
+        }
       });
     }
 

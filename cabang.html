@@ -429,6 +429,8 @@
       if (activeRole === 'master') {
         const backBtn = `<li><a href="index.html" class="hub-btn">Kembali Ke Hub</a></li>`;
         document.querySelector('.nav-menu').insertAdjacentHTML('beforeend', backBtn);
+        const logoutTrigger = document.getElementById('logout-trigger-item');
+        if (logoutTrigger) logoutTrigger.style.display = 'none';
       }
     });
   </script>
@@ -439,7 +441,7 @@
       <li><a href="#" class="nav-link active-link" data-target="page-overview">Dashboard</a></li>
       <li><a href="#" class="nav-link" data-target="page-input-laporan">Input Laporan</a></li>
       <li><a href="#" class="nav-link" data-target="page-setor-bank">Setor Bank</a></li>
-      <li><a href="#" class="logout-btn" id="logout-trigger">Keluar</a></li>
+      <li id="logout-trigger-item"><a href="#" class="logout-btn" id="logout-trigger">Keluar</a></li>
     </ul>
   </nav>
 
@@ -624,13 +626,16 @@
 
     document.querySelector('.subtitle span').innerText = activeName || activeAdmin;
 
-    document.getElementById('logout-trigger').addEventListener('click', function(e) {
-      e.preventDefault();
-      if(confirm('Apakah kamu yakin ingin keluar?')) {
-        localStorage.clear();
-        window.location.href = 'login.html';
-      }
-    });
+    const logoutBtn = document.getElementById('logout-trigger');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        if(confirm('Apakah kamu yakin ingin keluar?')) {
+          localStorage.clear();
+          window.location.href = 'login.html';
+        }
+      });
+    }
 
     const navLinks = document.querySelectorAll('.nav-link');
     const pages = document.querySelectorAll('.page-section');
