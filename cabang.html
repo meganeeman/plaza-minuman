@@ -352,6 +352,43 @@
       font-weight: 600;
     }
 
+    .action-btn-group {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-table-edit {
+      background-color: rgba(16, 185, 129, 0.08);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.15);
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .btn-table-edit:hover {
+      background-color: var(--success);
+      color: #060913;
+    }
+
+    .btn-table-delete {
+      background-color: rgba(239, 68, 68, 0.08);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.15);
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .btn-table-delete:hover {
+      background-color: var(--danger);
+      color: var(--text-main);
+    }
+
     .period-table {
       width: 100%;
       border-collapse: collapse;
@@ -472,6 +509,7 @@
 
       <div class="card">
         <form id="form-laporan-harian">
+          <input type="hidden" id="edit-id-laporan">
           <div class="form-group">
             <label for="lap-tanggal">Tanggal Operasional</label>
             <input type="date" id="lap-tanggal" onclick="this.showPicker()" required>
@@ -504,7 +542,7 @@
             <label for="lap-nota">Tautan Bukti Dokumen / Nota Fisik (Opsional)</label>
             <input type="url" id="lap-nota" placeholder="https://drive.google.com/drive/folders/...">
           </div>
-          <button type="submit">Simpan Laporan Harian</button>
+          <button type="submit" id="btn-submit-laporan">Simpan Laporan Harian</button>
         </form>
       </div>
 
@@ -525,6 +563,7 @@
                 <th>Deskripsi</th>
                 <th>Nota</th>
                 <th>Admin</th>
+                <th>Aksi</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -543,6 +582,7 @@
 
       <div class="card">
         <form id="form-setor-bank">
+          <input type="hidden" id="edit-id-setor">
           <div class="form-row">
             <div class="form-group">
               <label for="setor-tanggal">Tanggal Penyetoran Bank</label>
@@ -553,7 +593,7 @@
               <input type="text" id="setor-jumlah" class="rupiah-mask" value="Rp 0" required>
             </div>
           </div>
-          <button type="submit" style="background: #eab308; color: #060913;">Konfirmasi Setor Bank & Pengenolan Cash</button>
+          <button type="submit" id="btn-submit-setor" style="background: #eab308; color: #060913;">Konfirmasi Setor Bank & Pengenolan Cash</button>
         </form>
       </div>
 
@@ -566,6 +606,7 @@
                 <th>Tanggal Setor</th>
                 <th>Jumlah Setoran</th>
                 <th>Validator Admin</th>
+                <th>Aksi</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -702,6 +743,12 @@
       dataLaporan.forEach(item => {
         if (item.tanggal.toLowerCase().includes(filter)) {
           const link = item.nota ? `<a href="${item.nota}" target="_blank" style="color:var(--accent); text-decoration:none;">Lihat Nota</a>` : '-';
+          
+          let actionButtons = `<button class="btn-table-edit" onclick="pemicuEditLaporan(${item.id})">Edit</button>`;
+          if (activeRole === 'master') {
+            actionButtons += `<button class="btn-table-delete" onclick="hapusLaporanCabang(${item.id})">Hapus</button>`;
+          }
+
           tbody.innerHTML += `
             <tr>
               <td>${item.tanggal}</td>
@@ -712,6 +759,7 @@
               <td>${item.deskripsi_pengeluaran || '-'}</td>
               <td>${link}</td>
               <td><span class="admin-badge">${item.admin || 'Cabang'}</span></td>
+              <td><div class="action-btn-group">${actionButtons}</div></td>
             </tr>
           `;
         }
@@ -722,15 +770,66 @@
       const tbody = document.querySelector('#table-setor tbody');
       tbody.innerHTML = '';
       dataSetor.forEach(item => {
+        let actionButtons = `<button class="btn-table-edit" onclick="pemicuEditSetor(${item.id})">Edit</button>`;
+        if (activeRole === 'master') {
+          actionButtons += `<button class="btn-table-delete" onclick="hapusSetorBank(${item.id})">Hapus</button>`;
+        }
+
         tbody.innerHTML += `
           <tr>
             <td>${item.tanggal_setor}</td>
             <td style="color: #fde047; font-weight:600;">${formatRupiah(item.jumlah_setoran || 0)}</td>
             <td><span class="admin-badge">${item.admin || 'Cabang'}</span></td>
+            <td><div class="action-btn-group">${actionButtons}</div></td>
           </tr>
         `;
       });
     }
+
+    window.pemicuEditLaporan = function(id) {
+      const target = dataLaporan.find(i => i.id === id);
+      if (!target) return;
+      document.getElementById('edit-id-laporan').value = target.id;
+      document.getElementById('lap-tanggal').value = target.tanggal;
+      document.getElementById('lap-omset').value = formatRupiah(target.omset || 0);
+      document.getElementById('lap-cash').value = formatRupiah(target.cash_aktual || 0);
+      document.getElementById('lap-out-cash').value = formatRupiah(target.pengeluaran_cash || 0);
+      document.getElementById('lap-out-transfer').value = formatRupiah(target.pengeluaran_transfer || 0);
+      document.getElementById('lap-deskripsi').value = target.deskripsi_pengeluaran || '';
+      document.getElementById('lap-nota').value = target.nota || '';
+      document.getElementById('btn-submit-laporan').innerText = "Perbarui Laporan Harian";
+      document.getElementById('page-input-laporan').scrollIntoView({ behavior: 'smooth' });
+    };
+
+    window.hapusLaporanCabang = async function(id) {
+      if (confirm('Apakah kamu yakin ingin menghapus data laporan harian ini?')) {
+        const { error } = await clientSupabase.from('laporan_cabang').delete().eq('id', id);
+        if (!error) {
+          fetchDataAll();
+          alert('Data laporan berhasil dihapus!');
+        }
+      }
+    };
+
+    window.pemicuEditSetor = function(id) {
+      const target = dataSetor.find(i => i.id === id);
+      if (!target) return;
+      document.getElementById('edit-id-setor').value = target.id;
+      document.getElementById('setor-tanggal').value = target.tanggal_setor;
+      document.getElementById('setor-jumlah').value = formatRupiah(target.jumlah_setoran || 0);
+      document.getElementById('btn-submit-setor').innerText = "Perbarui Data Setoran Bank";
+      document.getElementById('page-setor-bank').scrollIntoView({ behavior: 'smooth' });
+    };
+
+    window.hapusSetorBank = async function(id) {
+      if (confirm('Apakah kamu yakin ingin menghapus data setoran bank ini?')) {
+        const { error } = await clientSupabase.from('setor_bank_cabang').delete().eq('id', id);
+        if (!error) {
+          fetchDataAll();
+          alert('Data setoran bank berhasil dihapus!');
+        }
+      }
+    };
 
     function initChartTren() {
       const ctx = document.getElementById('cabangChart').getContext('2d');
@@ -772,6 +871,7 @@
 
     document.getElementById('form-laporan-harian').addEventListener('submit', async function(e) {
       e.preventDefault();
+      const idLaporan = document.getElementById('edit-id-laporan').value;
       const outCash = cleanRupiahValue(document.getElementById('lap-out-cash').value);
       const outTrf = cleanRupiahValue(document.getElementById('lap-out-transfer').value);
       const deskripsi = document.getElementById('lap-deskripsi').value.trim();
@@ -781,11 +881,11 @@
         return;
       }
 
-      const btn = this.querySelector('button[type="submit"]');
+      const btn = document.getElementById('btn-submit-laporan');
       btn.disabled = true;
-      btn.innerText = "Menyimpan...";
+      btn.innerText = "Memproses...";
 
-      const baru = {
+      const paketData = {
         tanggal: document.getElementById('lap-tanggal').value,
         omset: cleanRupiahValue(document.getElementById('lap-omset').value),
         cash_aktual: cleanRupiahValue(document.getElementById('lap-cash').value),
@@ -796,45 +896,60 @@
         admin: activeName || activeAdmin
       };
 
-      const { error } = await clientSupabase.from('laporan_cabang').insert([baru]);
+      let hasil;
+      if (idLaporan) {
+        hasil = await clientSupabase.from('laporan_cabang').update(paketData).eq('id', idLaporan);
+      } else {
+        hasil = await clientSupabase.from('laporan_cabang').insert([paketData]);
+      }
+
       btn.disabled = false;
       btn.innerText = "Simpan Laporan Harian";
 
-      if (!error) {
+      if (!hasil.error) {
         this.reset();
+        document.getElementById('edit-id-laporan').value = '';
         document.querySelectorAll('.rupiah-mask').forEach(i => i.value = 'Rp 0');
         fetchDataAll();
         alert('Laporan harian berhasil disimpan!');
       } else {
-        alert('Gagal menyimpan laporan ke cloud!');
+        alert('Gagal memproses data laporan ke cloud!');
       }
     });
 
     document.getElementById('form-setor-bank').addEventListener('submit', async function(e) {
       e.preventDefault();
-      if (!confirm('Apakah Uang tunai sudah benar-benar disetorkan secara fisik ke ATM / Bank?')) return;
+      const idSetor = document.getElementById('edit-id-setor').value;
+      if (!idSetor && !confirm('Apakah uang tunai sudah benar-benar disetorkan secara fisik ke ATM / Bank?')) return;
 
-      const btn = this.querySelector('button[type="submit"]');
+      const btn = document.getElementById('btn-submit-setor');
       btn.disabled = true;
-      btn.innerText = "Memproses Setoran...";
+      btn.innerText = "Memproses...";
 
-      const baru = {
+      const paketData = {
         tanggal_setor: document.getElementById('setor-tanggal').value,
         jumlah_setoran: cleanRupiahValue(document.getElementById('setor-jumlah').value),
         admin: activeName || activeAdmin
       };
 
-      const { error } = await clientSupabase.from('setor_bank_cabang').insert([baru]);
+      let hasil;
+      if (idSetor) {
+        hasil = await clientSupabase.from('setor_bank_cabang').update(paketData).eq('id', idSetor);
+      } else {
+        hasil = await clientSupabase.from('setor_bank_cabang').insert([paketData]);
+      }
+
       btn.disabled = false;
       btn.innerText = "Konfirmasi Setor Bank & Pengenolan Cash";
 
-      if (!error) {
+      if (!hasil.error) {
         this.reset();
+        document.getElementById('edit-id-setor').value = '';
         document.getElementById('setor-jumlah').value = 'Rp 0';
         fetchDataAll();
-        alert('Penyetoran bank berhasil divalidasi!');
+        alert('Data setoran bank berhasil diproses!');
       } else {
-        alert('Gagal merekam setoran bank!');
+        alert('Gagal merekam data setoran bank!');
       }
     });
 
