@@ -468,6 +468,12 @@
       font-weight: 600;
     }
 
+    @keyframes pulse {
+      0% { opacity: 0.4; }
+      50% { opacity: 1; }
+      100% { opacity: 0.4; }
+    }
+
     @media (max-width: 900px) {
       .navbar { padding: 0 20px; }
       .container { padding: 105px 20px 40px 20px; }
@@ -802,19 +808,19 @@
           <div class="form-row">
             <div class="form-group">
               <label for="in-bri">Pemasukan Bank BRI (Rp)</label>
-              <input type="number" id="in-bri" min="0" value="0">
+              <input type="text" id="in-bri" class="rupiah-mask" value="Rp 0">
             </div>
             <div class="form-group">
               <label for="in-bni">Pemasukan Bank BNI (Rp)</label>
-              <input type="number" id="in-bni" min="0" value="0">
+              <input type="text" id="in-bni" class="rupiah-mask" value="Rp 0">
             </div>
             <div class="form-group">
               <label for="in-bca">Pemasukan Bank BCA (Rp)</label>
-              <input type="number" id="in-bca" min="0" value="0">
+              <input type="text" id="in-bca" class="rupiah-mask" value="Rp 0">
             </div>
             <div class="form-group">
               <label for="in-bsi">Pemasukan Bank BSI (Rp)</label>
-              <input type="number" id="in-bsi" min="0" value="0">
+              <input type="text" id="in-bsi" class="rupiah-mask" value="Rp 0">
             </div>
           </div>
           <button type="submit">Simpan Transaksi Pemasukan</button>
@@ -876,7 +882,7 @@
             </div>
             <div class="form-group">
               <label for="jumlah-out">Nominal (Rp)</label>
-              <input type="number" id="jumlah-out" min="0" placeholder="0" required>
+              <input type="text" id="jumlah-out" class="rupiah-mask" value="Rp 0" required>
             </div>
           </div>
           <button type="submit">Simpan Transaksi Pengeluaran</button>
@@ -963,6 +969,38 @@
     const formatRupiah = (angka) => {
       return 'Rp ' + parseInt(angka).toLocaleString('id-ID');
     };
+
+    const cleanRupiahValue = (str) => {
+      if (!str) return 0;
+      const clean = str.replace(/[^0-9]/g, '');
+      return parseFloat(clean) || 0;
+    };
+
+    const formatInputRupiah = (val) => {
+      const number = val.replace(/[^0-9]/g, '');
+      if (!number) return 'Rp 0';
+      return 'Rp ' + parseInt(number).toLocaleString('id-ID');
+    };
+
+    document.querySelectorAll('.rupiah-mask').forEach(input => {
+      input.addEventListener('focus', function() {
+        if (this.value === 'Rp 0') this.value = '';
+      });
+      
+      input.addEventListener('blur', function() {
+        if (this.value === '') this.value = 'Rp 0';
+      });
+
+      input.addEventListener('input', function() {
+        const cursorPosition = this.selectionStart;
+        const oldLength = this.value.length;
+        
+        this.value = formatInputRupiah(this.value);
+        
+        const newLength = this.value.length;
+        this.setSelectionRange(cursorPosition + (newLength - oldLength), cursorPosition + (newLength - oldLength));
+      });
+    });
 
     const getDayName = (dateString) => {
       const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
@@ -1264,7 +1302,7 @@
         const sekarang = new Date();
         const opsiTanggal = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         const tanggalFormatted = sekarang.toLocaleDateString('id-ID', opsiTanggal);
-        const jamFormatted = Clinical = sekarang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const jamFormatted = sekarang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         clockElement.innerHTML = `<span style="color: #10b981; animation: pulse 2s infinite;">●</span> ${tanggalFormatted} | ${jamFormatted} WIB`;
       }, 1000);
     }
@@ -1280,10 +1318,10 @@
 
       const baru = {
         tanggal: document.getElementById('tgl-pemasukan').value,
-        bri: parseFloat(document.getElementById('in-bri').value) || 0,
-        bni: parseFloat(document.getElementById('in-bni').value) || 0,
-        bca: parseFloat(document.getElementById('in-bca').value) || 0,
-        bsi: parseFloat(document.getElementById('in-bsi').value) || 0,
+        bri: cleanRupiahValue(document.getElementById('in-bri').value),
+        bni: cleanRupiahValue(document.getElementById('in-bni').value),
+        bca: cleanRupiahValue(document.getElementById('in-bca').value),
+        bsi: cleanRupiahValue(document.getElementById('in-bsi').value),
         admin: activeName || activeAdmin
       };
 
@@ -1294,6 +1332,7 @@
 
       if (!error) {
         this.reset();
+        document.querySelectorAll('.rupiah-mask').forEach(input => input.value = 'Rp 0');
         fetchAllData();
       } else {
         alert('Gagal menyimpan data ke server cloud!');
@@ -1310,7 +1349,7 @@
         tanggal: document.getElementById('tgl-pengeluaran').value,
         deskripsi: document.getElementById('deskripsi-out').value,
         bank: document.getElementById('select-bank').value,
-        jumlah: parseFloat(document.getElementById('jumlah-out').value) || 0,
+        jumlah: cleanRupiahValue(document.getElementById('jumlah-out').value),
         admin: activeName || activeAdmin
       };
 
@@ -1321,6 +1360,7 @@
 
       if (!error) {
         this.reset();
+        document.getElementById('jumlah-out').value = 'Rp 0';
         fetchAllData();
       } else {
         alert('Gagal menyimpan data ke server cloud!');
