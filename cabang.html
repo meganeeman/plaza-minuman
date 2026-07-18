@@ -166,7 +166,7 @@
     }
 
     .stat-card.omset::before { background-color: var(--accent); }
-    .stat-card.transaksi::before { background-color: #a855f7; }
+    .stat-card.pengeluaran::before { background-color: var(--danger); }
     .stat-card.cash::before { background-color: var(--success); }
     .stat-card.bank::before { background-color: #eab308; }
 
@@ -187,7 +187,7 @@
     }
 
     .stat-card.omset .value { color: var(--accent); }
-    .stat-card.transaksi .value { color: #c084fc; }
+    .stat-card.pengeluaran .value { color: var(--danger); }
     .stat-card.cash .value { color: var(--success); }
     .stat-card.bank .value { color: #fde047; }
 
@@ -368,9 +368,9 @@
           <h3>Total Omset Harian</h3>
           <div class="value" id="disp-total-omset">Rp 0</div>
         </div>
-        <div class="stat-card transaksi">
-          <h3>Total Transaksi</h3>
-          <div class="value" id="disp-total-transaksi">0 Baris</div>
+        <div class="stat-card pengeluaran">
+          <h3>Total Pengeluaran Harian</h3>
+          <div class="value" id="disp-total-pengeluaran">Rp 0</div>
         </div>
         <div class="stat-card cash">
           <h3>Sisa Cash Aktual</h3>
@@ -552,11 +552,12 @@
         totalOutTransfer += (item.pengeluaran_transfer || 0);
       });
 
+      const totalPengeluaranAll = totalOutCash + totalOutTransfer;
       const sisaCash = totalCashAktual - totalOutCash;
       const saldoRekening = (totalTransferBRI + totalSetoranBank) - totalOutTransfer;
 
       document.getElementById('disp-total-omset').innerText = formatRupiah(totalOmset);
-      document.getElementById('disp-total-transaksi').innerText = `${dataCabang.length} Baris`;
+      document.getElementById('disp-total-pengeluaran').innerText = formatRupiah(totalPengeluaranAll);
       document.getElementById('disp-sisa-cash').innerText = formatRupiah(sisaCash);
       document.getElementById('disp-saldo-rekening').innerText = formatRupiah(saldoRekening);
     }
@@ -594,7 +595,7 @@
       setInterval(() => {
         const sekarang = new Date();
         const opsiTanggal = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        const tanggalFormatted = sekarang.toLocaleDateString('id-ID', opsiTanggal);
+        const tanggalFormatted = Thermal = sekarang.toLocaleDateString('id-ID', opsiTanggal);
         const jamFormatted = sekarang.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         clockElement.innerHTML = `<span style="color: #10b981; animation: pulse 2s infinite;">●</span> ${tanggalFormatted} | ${jamFormatted} WIB`;
       }, 1000);
