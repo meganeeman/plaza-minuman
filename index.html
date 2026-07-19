@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -129,6 +130,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <script>
@@ -136,6 +138,7 @@
     const activeRole = localStorage.getItem('admin_role');
     const activeName = localStorage.getItem('admin_name');
 
+    // Mengunci akses halaman Hub agar hanya bisa dilewati Master dan Owner demi keamanan
     if (!activeAdmin || (activeRole !== 'master' && activeRole !== 'owner')) {
       window.location.href = 'login.html';
     }
@@ -144,14 +147,16 @@
   <div class="hub-container">
     <div class="hub-header">
       <h1>Plaza <span>Minuman</span></h1>
-      <div class="subtitle">Halo, <span id="user-name" style="color:var(--accent); font-weight:600;"></span>! Pilih gerbang panel sistem yang ingin kamu kelola.</div>
+      <div class="subtitle">Halo, <span id="user-name" style="color:var(--accent); font-weight:600;"></span>! Pilih
+        gerbang panel sistem yang ingin kamu kelola.</div>
     </div>
 
     <div class="grid-portal">
       <a href="finansial.html" class="portal-card">
         <div>
           <h2>Panel Finansial Pusat</h2>
-          <p>Kelola arus penambahan pemasukan, pencatatan pengeluaran operasional, serta akumulasi saldo real-time di 4 portofolio rekening bank.</p>
+          <p>Kelola arus penambahan pemasukan, pencatatan pengeluaran operasional, serta akumulasi saldo real-time di 4
+            portofolio rekening bank.</p>
         </div>
         <span class="badge">Akses Konsolidasi</span>
       </a>
@@ -159,7 +164,8 @@
       <a href="cabang.html" class="portal-card">
         <div>
           <h2>Monitoring Keuangan Cabang</h2>
-          <p>Pantau rekapan omset harian toko, sisa kas aktual, penulisan deskripsi audit, nota pengeluaran, serta validasi setoran uang tunai bank.</p>
+          <p>Pantau rekapan omset harian toko, sisa kas aktual, penulisan deskripsi audit, nota pengeluaran, serta
+            validasi setoran uang tunai bank.</p>
         </div>
         <span class="badge">Akses Lapangan</span>
       </a>
@@ -170,12 +176,13 @@
 
   <script>
     document.getElementById('user-name').innerText = activeName || activeAdmin;
-    document.getElementById('hub-logout').addEventListener('click', function() {
-      if(confirm('Apakah kamu yakin ingin keluar dari sistem manajemen?')) {
+    document.getElementById('hub-logout').addEventListener('click', function () {
+      if (confirm('Apakah kamu yakin ingin keluar dari sistem manajemen?')) {
         localStorage.clear();
         window.location.href = 'login.html';
       }
     });
   </script>
 </body>
+
 </html>

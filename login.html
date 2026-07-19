@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -123,6 +124,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <div class="login-container">
@@ -147,12 +149,12 @@
   <script>
     const SUPABASE_URL = "https://vccwscybnhpatjioixfx.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_blMwzDZ5pM1TciQzhsg8UQ_cCB_ixOQ";
-    
+
     const clientSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    document.getElementById('login-form').addEventListener('submit', async function(e) {
+    document.getElementById('login-form').addEventListener('submit', async function (e) {
       e.preventDefault();
-      
+
       const userIn = document.getElementById('username').value.trim();
       const passIn = document.getElementById('password').value;
       const errorBox = document.getElementById('error-box');
@@ -178,11 +180,18 @@
           localStorage.setItem('current_admin', data.username);
           localStorage.setItem('admin_role', data.role);
           localStorage.setItem('admin_name', data.nama_lengkap);
-          
+
+          // Pengalihan halaman dinamis berdasarkan role database
           if (data.role === 'admin_cabang') {
             window.location.href = 'cabang.html';
-          } else {
+          } else if (data.role === 'admin_finansial') {
+            window.location.href = 'finansial.html';
+          } else if (data.role === 'master' || data.role === 'owner') {
             window.location.href = 'index.html';
+          } else {
+            alert('Role akun kamu tidak diberikan hak akses masuk!');
+            localStorage.clear();
+            window.location.reload();
           }
         }
       } catch (err) {
@@ -195,4 +204,5 @@
     });
   </script>
 </body>
+
 </html>

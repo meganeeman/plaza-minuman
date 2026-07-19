@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -27,7 +28,8 @@
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
     }
 
-    html, body {
+    html,
+    body {
       height: 100%;
       background-color: var(--bg-primary);
       color: var(--text-main);
@@ -101,6 +103,15 @@
       background-color: rgba(168, 85, 247, 0.1);
     }
 
+    .nav-menu a.logout-btn {
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .nav-menu a.logout-btn:hover {
+      background-color: rgba(239, 68, 68, 0.1);
+    }
+
     .container {
       padding: 115px 40px 60px 40px;
       max-width: 1400px;
@@ -117,8 +128,15 @@
     }
 
     @keyframes pageReveal {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .header-block {
@@ -182,7 +200,8 @@
       margin-bottom: 30px;
     }
 
-    .stat-card, .card {
+    .stat-card,
+    .card {
       background: rgba(21, 29, 48, 0.35) !important;
       backdrop-filter: blur(20px) !important;
       -webkit-backdrop-filter: blur(20px) !important;
@@ -203,9 +222,17 @@
       height: 100%;
     }
 
-    .stat-card.saldo::before { background-color: var(--success); }
-    .stat-card.pemasukan::before { background-color: var(--accent); }
-    .stat-card.pengeluaran::before { background-color: var(--danger); }
+    .stat-card.saldo::before {
+      background-color: var(--success);
+    }
+
+    .stat-card.pemasukan::before {
+      background-color: var(--accent);
+    }
+
+    .stat-card.pengeluaran::before {
+      background-color: var(--danger);
+    }
 
     .stat-card h3 {
       font-size: 11px;
@@ -223,9 +250,17 @@
       margin-bottom: 16px;
     }
 
-    .stat-card.saldo .value { color: var(--success); }
-    .stat-card.pemasukan .value { color: var(--accent); }
-    .stat-card.pengeluaran .value { color: var(--danger); }
+    .stat-card.saldo .value {
+      color: var(--success);
+    }
+
+    .stat-card.pemasukan .value {
+      color: var(--accent);
+    }
+
+    .stat-card.pengeluaran .value {
+      color: var(--danger);
+    }
 
     .bank-list {
       display: flex;
@@ -275,7 +310,8 @@
       color: #94a3b8;
     }
 
-    .form-group input, .form-group select {
+    .form-group input,
+    .form-group select {
       width: 100%;
       padding: 14px 16px;
       border: 1px solid var(--border);
@@ -286,7 +322,8 @@
       transition: all 0.2s;
     }
 
-    .form-group input:focus, .form-group select:focus {
+    .form-group input:focus,
+    .form-group select:focus {
       outline: none;
       border-color: var(--accent);
       box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
@@ -354,7 +391,8 @@
       font-size: 14px;
     }
 
-    th, td {
+    th,
+    td {
       padding: 16px 20px;
       border-bottom: 1px solid var(--border);
       text-align: left;
@@ -428,44 +466,89 @@
       font-weight: 600;
     }
 
+    .lock-badge {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
     @media (max-width: 900px) {
-      .navbar { padding: 0 20px; }
-      .container { padding: 105px 20px 40px 20px; }
-      .grid-dashboard-bottom { grid-template-columns: 1fr; }
-      .table-header-flex { flex-direction: column; align-items: flex-start; }
-      .search-input { width: 100%; }
+      .navbar {
+        padding: 0 20px;
+      }
+
+      .container {
+        padding: 105px 20px 40px 20px;
+      }
+
+      .grid-dashboard-bottom {
+        grid-template-columns: 1fr;
+      }
+
+      .table-header-flex {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .search-input {
+        width: 100%;
+      }
     }
   </style>
 </head>
+
 <body>
 
   <script>
     const activeAdmin = localStorage.getItem('current_admin');
-    const activeRole = localStorage.getItem('admin_role'); 
+    const activeRole = localStorage.getItem('admin_role');
     const activeName = localStorage.getItem('admin_name');
 
-    if (!activeAdmin || (activeRole !== 'master' && activeRole !== 'owner')) {
+    // Menambahkan role admin_finansial ke whitelist halaman finansial pusat
+    if (!activeAdmin || (activeRole !== 'master' && activeRole !== 'owner' && activeRole !== 'admin_finansial')) {
       window.location.href = 'login.html';
     }
 
-    if (activeRole === 'owner') {
-      window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', () => {
+      if (activeRole === 'owner') {
         document.getElementById('form-pemasukan').style.display = 'none';
         document.getElementById('form-pengeluaran').style.display = 'none';
         const infoMsg = '<div style="background:rgba(56,189,248,0.1); padding:15px; border-radius:10px; color:#38bdf8; margin-bottom:20px; font-size:14px; text-align:center;">Mode Peninjauan: Anda masuk sebagai Owner (Akses Baca Saja)</div>';
         document.getElementById('page-pemasukan').insertAdjacentHTML('afterbegin', infoMsg);
         document.getElementById('page-pengeluaran').insertAdjacentHTML('afterbegin', infoMsg);
-      });
-    }
+      } else if (activeRole === 'admin_finansial') {
+        // 1. Sembunyikan tab dashboard pusat dari navbar
+        const navDashboard = document.getElementById('nav-item-dashboard');
+        if (navDashboard) navDashboard.style.display = 'none';
+
+        // 2. Alihkan tab aktif secara paksa langsung ke Input Pemasukan
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active-link'));
+        const fallbackTab = document.querySelector('[data-target="page-pemasukan"]');
+        if (fallbackTab) fallbackTab.classList.add('active-link');
+
+        // 3. Sembunyikan section page-dashboard, buka section page-pemasukan
+        document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active-page'));
+        const fallbackPage = document.getElementById('page-pemasukan');
+        if (fallbackPage) fallbackPage.classList.add('active-page');
+      }
+
+      // Menyembunyikan tombol Hub Utama bagi yang bukan Master/Owner demi keamanan portal
+      if (activeRole !== 'master' && activeRole !== 'owner') {
+        const btnHub = document.getElementById('nav-item-hub');
+        if (btnHub) btnHub.style.display = 'none';
+      }
+    });
   </script>
 
   <nav class="navbar">
     <div class="logo">Plaza <span>Minuman</span></div>
     <ul class="nav-menu">
-      <li><a href="#" class="nav-link active-link" data-target="page-dashboard">Dashboard</a></li>
+      <li id="nav-item-dashboard"><a href="#" class="nav-link active-link" data-target="page-dashboard">Dashboard</a>
+      </li>
       <li><a href="#" class="nav-link" data-target="page-pemasukan">Input Pemasukan</a></li>
       <li><a href="#" class="nav-link" data-target="page-pengeluaran">Input Pengeluaran</a></li>
-      <li><a href="index.html" class="hub-btn">Kembali Ke Hub</a></li>
+      <li id="nav-item-hub"><a href="index.html" class="hub-btn">Kembali Ke Hub</a></li>
+      <li><a href="#" class="logout-btn" id="fin-logout-btn">Keluar</a></li>
     </ul>
   </nav>
 
@@ -475,41 +558,54 @@
       <div class="header-block">
         <div class="header-text">
           <h1>Dashboard Finansial</h1>
-          <div class="subtitle">Halo, <span id="welcome-admin" style="color:var(--accent); font-weight:600;"></span>! Rekap keuangan konsolidasi pusat.</div>
+          <div class="subtitle">Halo, <span id="welcome-admin" style="color:var(--accent); font-weight:600;"></span>!
+            Rekap keuangan konsolidasi pusat.</div>
           <div id="live-clock" style="font-size: 12px; color: #64748b; margin-top: 8px;">● Memuat waktu server...</div>
         </div>
         <button onclick="window.print()" class="btn-pdf">Cetak Laporan PDF</button>
       </div>
-      
+
       <div class="summary-grid">
         <div class="stat-card saldo">
           <h3>Total Sisa Saldo</h3>
           <div class="value" id="total-saldo-display">Rp 0</div>
           <div class="bank-list">
-            <div class="bank-item"><span class="bank-name">BRI</span><span class="bank-val" id="saldo-bri">Rp 0</span></div>
-            <div class="bank-item"><span class="bank-name">BNI</span><span class="bank-val" id="saldo-bni">Rp 0</span></div>
-            <div class="bank-item"><span class="bank-name">BCA</span><span class="bank-val" id="saldo-bca">Rp 0</span></div>
-            <div class="bank-item"><span class="bank-name">BSI</span><span class="bank-val" id="saldo-bsi">Rp 0</span></div>
+            <div class="bank-item"><span class="bank-name">BRI</span><span class="bank-val" id="saldo-bri">Rp 0</span>
+            </div>
+            <div class="bank-item"><span class="bank-name">BNI</span><span class="bank-val" id="saldo-bni">Rp 0</span>
+            </div>
+            <div class="bank-item"><span class="bank-name">BCA</span><span class="bank-val" id="saldo-bca">Rp 0</span>
+            </div>
+            <div class="bank-item"><span class="bank-name">BSI</span><span class="bank-val" id="saldo-bsi">Rp 0</span>
+            </div>
           </div>
         </div>
         <div class="stat-card pemasukan">
           <h3>Total Pemasukan</h3>
           <div class="value" id="total-pemasukan-display">Rp 0</div>
           <div class="bank-list">
-            <div class="bank-item"><span class="bank-name">BRI</span><span class="bank-val" id="in-total-bri">Rp 0</span></div>
-            <div class="bank-item"><span class="bank-name">BNI</span><span class="bank-val" id="in-total-bni">Rp 0</span></div>
-            <div class="bank-item"><span class="bank-name">BCA</span><span class="bank-val" id="in-total-bca">Rp 0</span></div>
-            <div class="bank-item"><span class="bank-name">BSI</span><span class="bank-val" id="in-total-bsi">Rp 0</span></div>
+            <div class="bank-item"><span class="bank-name">BRI</span><span class="bank-val" id="in-total-bri">Rp
+                0</span></div>
+            <div class="bank-item"><span class="bank-name">BNI</span><span class="bank-val" id="in-total-bni">Rp
+                0</span></div>
+            <div class="bank-item"><span class="bank-name">BCA</span><span class="bank-val" id="in-total-bca">Rp
+                0</span></div>
+            <div class="bank-item"><span class="bank-name">BSI</span><span class="bank-val" id="in-total-bsi">Rp
+                0</span></div>
           </div>
         </div>
         <div class="stat-card pengeluaran">
           <h3>Total Pengeluaran</h3>
           <div class="value" id="total-pengeluaran-display">Rp 0</div>
           <div class="bank-list">
-            <div class="bank-item"><span class="bank-name">BRI</span><span class="bank-val" id="out-total-bri">Rp 0</span></div>
-            <div class="bank-item"><span class="bank-name">BNI</span><span class="bank-val" id="out-total-bni">Rp 0</span></div>
-            <div class="bank-item"><span class="bank-name">BCA</span><span class="bank-val" id="out-total-bca">Rp 0</span></div>
-            <div class="bank-item"><span class="bank-name">BSI</span><span class="bank-val" id="out-total-bsi">Rp 0</span></div>
+            <div class="bank-item"><span class="bank-name">BRI</span><span class="bank-val" id="out-total-bri">Rp
+                0</span></div>
+            <div class="bank-item"><span class="bank-name">BNI</span><span class="bank-val" id="out-total-bni">Rp
+                0</span></div>
+            <div class="bank-item"><span class="bank-name">BCA</span><span class="bank-val" id="out-total-bca">Rp
+                0</span></div>
+            <div class="bank-item"><span class="bank-name">BSI</span><span class="bank-val" id="out-total-bsi">Rp
+                0</span></div>
           </div>
         </div>
       </div>
@@ -519,9 +615,15 @@
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h2>Analisis & Tren Finansial</h2>
             <div class="chart-filters" style="display: flex; gap: 8px;">
-              <button onclick="changeChartPeriod('day')" class="btn-filter active-filter" id="btn-filter-day" style="background: var(--accent); color: var(--bg-primary); border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">Hari Ini</button>
-              <button onclick="changeChartPeriod('week')" class="btn-filter" id="btn-filter-week" style="background: rgba(255,255,255,0.02); color: var(--text-main); border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500;">7 Hari Terakhir</button>
-              <button onclick="changeChartPeriod('month')" class="btn-filter" id="btn-filter-month" style="background: rgba(255,255,255,0.02); color: var(--text-main); border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500;">30 Hari Terakhir</button>
+              <button onclick="changeChartPeriod('day')" class="btn-filter active-filter" id="btn-filter-day"
+                style="background: var(--accent); color: var(--bg-primary); border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">Hari
+                Ini</button>
+              <button onclick="changeChartPeriod('week')" class="btn-filter" id="btn-filter-week"
+                style="background: rgba(255,255,255,0.02); color: var(--text-main); border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500;">7
+                Hari Terakhir</button>
+              <button onclick="changeChartPeriod('month')" class="btn-filter" id="btn-filter-month"
+                style="background: rgba(255,255,255,0.02); color: var(--text-main); border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500;">30
+                Hari Terakhir</button>
             </div>
           </div>
           <div class="chart-container">
@@ -573,8 +675,8 @@
         <form id="form-pemasukan">
           <input type="hidden" id="edit-id-pemasukan">
           <div class="form-group">
-              <label for="tgl-pemasukan">Tanggal Transaksi</label>
-              <input type="date" id="tgl-pemasukan" onclick="this.showPicker()" required>
+            <label for="tgl-pemasukan">Tanggal Transaksi</label>
+            <input type="date" id="tgl-pemasukan" onclick="this.showPicker()" required>
           </div>
           <div class="form-row">
             <div class="form-group">
@@ -693,6 +795,17 @@
 
     document.getElementById('welcome-admin').innerText = activeName || activeAdmin;
 
+    const finLogoutBtn = document.getElementById('fin-logout-btn');
+    if (finLogoutBtn) {
+      finLogoutBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (confirm('Apakah kamu yakin ingin keluar?')) {
+          localStorage.clear();
+          window.location.href = 'login.html';
+        }
+      });
+    }
+
     const navLinks = document.querySelectorAll('.nav-link');
     const pages = document.querySelectorAll('.page-section');
 
@@ -703,7 +816,7 @@
         link.classList.add('active-link');
         const target = link.getAttribute('data-target');
         pages.forEach(p => {
-          if(p.id === target) p.classList.add('active-page');
+          if (p.id === target) p.classList.add('active-page');
           else p.classList.remove('active-page');
         });
       });
@@ -723,9 +836,9 @@
     };
 
     document.querySelectorAll('.rupiah-mask').forEach(input => {
-      input.addEventListener('focus', function() { if (this.value === 'Rp 0') this.value = ''; });
-      input.addEventListener('blur', function() { if (this.value === '') this.value = 'Rp 0'; });
-      input.addEventListener('input', function() {
+      input.addEventListener('focus', function () { if (this.value === 'Rp 0') this.value = ''; });
+      input.addEventListener('blur', function () { if (this.value === '') this.value = 'Rp 0'; });
+      input.addEventListener('input', function () {
         const cursor = this.selectionStart;
         const oldLen = this.value.length;
         this.value = formatInputRupiah(this.value);
@@ -757,9 +870,15 @@
         totalIn += rowTotal;
         inBri += (item.bri || 0); inBni += (item.bni || 0); inBca += (item.bca || 0); inBsi += (item.bsi || 0);
         if (item.tanggal.includes(filterIn)) {
-          let actionButtons = `<button class="btn-table-edit" onclick="pemicuEditPemasukan(${item.id})">Edit</button>`;
-          if (activeRole === 'master') {
-            actionButtons += `<button class="btn-delete" onclick="hapusPemasukan(${item.id})">Hapus</button>`;
+          let actionButtons = '';
+          // Hanya memunculkan aksi edit/hapus untuk master dan owner
+          if (activeRole === 'master' || activeRole === 'owner') {
+            actionButtons += `<button class="btn-table-edit" onclick="pemicuEditPemasukan(${item.id})">Edit</button>`;
+            if (activeRole === 'master') {
+              actionButtons += `<button class="btn-delete" onclick="hapusPemasukan(${item.id})">Hapus</button>`;
+            }
+          } else {
+            actionButtons = '<span class="lock-badge">Terunci</span>';
           }
 
           tbodyIn.innerHTML += `
@@ -789,9 +908,15 @@
         if (item.bank === 'BSI') outBsi += amt;
 
         if (item.deskripsi.toLowerCase().includes(filterOut)) {
-          let actionButtons = `<button class="btn-table-edit" onclick="pemicuEditPengeluaran(${item.id})">Edit</button>`;
-          if (activeRole === 'master') {
-            actionButtons += `<button class="btn-delete" onclick="hapusPengeluaran(${item.id})">Hapus</button>`;
+          let actionButtons = '';
+          // Hanya memunculkan aksi edit/hapus untuk master dan owner
+          if (activeRole === 'master' || activeRole === 'owner') {
+            actionButtons += `<button class="btn-table-edit" onclick="pemicuEditPengeluaran(${item.id})">Edit</button>`;
+            if (activeRole === 'master') {
+              actionButtons += `<button class="btn-delete" onclick="hapusPengeluaran(${item.id})">Hapus</button>`;
+            }
+          } else {
+            actionButtons = '<span class="lock-badge">Terunci</span>';
           }
 
           tbodyOut.innerHTML += `
@@ -823,7 +948,8 @@
       updateChart();
     }
 
-    window.pemicuEditPemasukan = function(id) {
+    window.pemicuEditPemasukan = function (id) {
+      if (activeRole !== 'master' && activeRole !== 'owner') { alert('Akses ditolak: Perubahan data terkunci.'); return; }
       const target = dataPemasukan.find(i => i.id === id);
       if (!target) return;
       document.getElementById('edit-id-pemasukan').value = target.id;
@@ -836,7 +962,7 @@
       document.getElementById('page-pemasukan').scrollIntoView({ behavior: 'smooth' });
     };
 
-    window.hapusPemasukan = async function(id) {
+    window.hapusPemasukan = async function (id) {
       if (activeRole !== 'master') { alert('Akses ditolak: Hanya Akun Master yang diizinkan menghapus data.'); return; }
       if (confirm('Hapus transaksi ini?')) {
         const { error } = await clientSupabase.from('pemasukan').delete().eq('id', id);
@@ -844,7 +970,8 @@
       }
     };
 
-    window.pemicuEditPengeluaran = function(id) {
+    window.pemicuEditPengeluaran = function (id) {
+      if (activeRole !== 'master' && activeRole !== 'owner') { alert('Akses ditolak: Perubahan data terkunci.'); return; }
       const target = dataPengeluaran.find(i => i.id === id);
       if (!target) return;
       document.getElementById('edit-id-pengeluaran').value = target.id;
@@ -856,7 +983,7 @@
       document.getElementById('page-pengeluaran').scrollIntoView({ behavior: 'smooth' });
     };
 
-    window.hapusPengeluaran = async function(id) {
+    window.hapusPengeluaran = async function (id) {
       if (activeRole !== 'master') { alert('Akses ditolak: Hanya Akun Master yang diizinkan menghapus data.'); return; }
       if (confirm('Hapus transaksi ini?')) {
         const { error } = await clientSupabase.from('pengeluaran').delete().eq('id', id);
@@ -864,7 +991,7 @@
       }
     };
 
-    document.getElementById('form-pemasukan').addEventListener('submit', async function(e) {
+    document.getElementById('form-pemasukan').addEventListener('submit', async function (e) {
       e.preventDefault();
       const idPemasukan = document.getElementById('edit-id-pemasukan').value;
       const btn = document.getElementById('btn-submit-pemasukan');
@@ -899,7 +1026,7 @@
       }
     });
 
-    document.getElementById('form-pengeluaran').addEventListener('submit', async function(e) {
+    document.getElementById('form-pengeluaran').addEventListener('submit', async function (e) {
       e.preventDefault();
       const idPengeluaran = document.getElementById('edit-id-pengeluaran').value;
       const btn = document.getElementById('btn-submit-pengeluaran');
@@ -945,7 +1072,7 @@
       let inMonth = 0; let outMonth = 0;
 
       const sekarang = new Date();
-      sekarang.setHours(0,0,0,0);
+      sekarang.setHours(0, 0, 0, 0);
       const todayStr = getLocalDateString(sekarang);
 
       dataPemasukan.forEach(i => {
@@ -984,14 +1111,14 @@
       let totalOut = 0;
 
       const sekarang = new Date();
-      sekarang.setHours(0,0,0,0);
+      sekarang.setHours(0, 0, 0, 0);
       const todayStr = getLocalDateString(sekarang);
-      
+
       dataPemasukan.forEach(i => {
         const tglData = new Date(i.tanggal + 'T00:00:00');
         const selisihHari = Math.floor((sekarang - tglData) / (1000 * 60 * 60 * 24));
         const rowIn = (i.bri || 0) + (i.bni || 0) + (i.bca || 0) + (i.bsi || 0);
-        
+
         if (currentChartPeriod === 'day' && i.tanggal === todayStr) {
           totalIn += rowIn;
         } else if (currentChartPeriod === 'week' && selisihHari >= 0 && selisihHari < 7) {
@@ -1037,8 +1164,8 @@
             ]
           }]
         },
-        options: { 
-          responsive: true, 
+        options: {
+          responsive: true,
           maintainAspectRatio: false,
           plugins: {
             legend: { labels: { color: '#94a3b8' } }
@@ -1058,9 +1185,9 @@
       });
     }
 
-    function changeChartPeriod(p) { 
-      currentChartPeriod = p; 
-      
+    function changeChartPeriod(p) {
+      currentChartPeriod = p;
+
       document.querySelectorAll('.btn-filter').forEach(btn => {
         btn.style.background = 'rgba(255,255,255,0.02)';
         btn.style.color = 'var(--text-main)';
@@ -1076,13 +1203,13 @@
         activeBtn.style.fontWeight = '600';
       }
 
-      updateChart(); 
+      updateChart();
     }
 
     function updateLiveClock() {
       const clockEl = document.getElementById('live-clock');
       if (!clockEl) return;
-      
+
       const options = {
         timeZone: 'Asia/Jakarta',
         weekday: 'long',
@@ -1094,7 +1221,7 @@
         second: '2-digit',
         hour12: false
       };
-      
+
       setInterval(() => {
         const sekarang = new Date();
         const formatter = new Intl.DateTimeFormat('id-ID', options);
@@ -1111,4 +1238,5 @@
     });
   </script>
 </body>
+
 </html>
