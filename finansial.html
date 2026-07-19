@@ -933,113 +933,182 @@
       }
     });
 
+    function getLocalDateString(dateObj) {
+      const offset = dateObj.getTimezoneOffset();
+      const adjustedDate = new Date(dateObj.getTime() - (offset * 60 * 1000));
+      return adjustedDate.toISOString().split('T')[0];
+    }
+
     function calculatePeriodStats() {
       let inDay = 0; let outDay = 0;
-      const todayStr = new Date().toISOString().split('T')[0];
-      dataPemasukan.forEach(i => { if(i.tanggal === todayStr) inDay += (i.bri||0)+(i.bni||0)+(i.bca||0)+(i.bsi||0); });
-      dataPengeluaran.forEach(i => { if(i.tanggal === todayStr) outDay += (i.jumlah||0); });
+      let inWeek = 0; let outWeek = 0;
+      let inMonth = 0; let outMonth = 0;
+
+      const sekarang = new Date();
+      sekarang.setHours(0,0,0,0);
+      const todayStr = getLocalDateString(sekarang);
+
+      dataPemasukan.forEach(i => {
+        const rowIn = (i.bri || 0) + (i.bni || 0) + (i.bca || 0) + (i.bsi || 0);
+        const tglData = new Date(i.tanggal + 'T00:00:00');
+        const selisihHari = Math.floor((sekarang - tglData) / (1000 * 60 * 60 * 24));
+
+        if (i.tanggal === todayStr) inDay += rowIn;
+        if (selisihHari >= 0 && selisihHari < 7) inWeek += rowIn;
+        if (selisihHari >= 0 && selisihHari < 30) inMonth += rowIn;
+      });
+
+      dataPengeluaran.forEach(i => {
+        const rowOut = i.jumlah || 0;
+        const tglData = new Date(i.tanggal + 'T00:00:00');
+        const selisihHari = Math.floor((sekarang - tglData) / (1000 * 60 * 60 * 24));
+
+        if (i.tanggal === todayStr) outDay += rowOut;
+        if (selisihHari >= 0 && selisihHari < 7) outWeek += rowOut;
+        if (selisihHari >= 0 && selisihHari < 30) outMonth += rowOut;
+      });
+
       document.getElementById('period-in-day').innerText = formatRupiah(inDay);
       document.getElementById('period-out-day').innerText = formatRupiah(outDay);
+      document.getElementById('period-in-week').innerText = formatRupiah(inWeek);
+      document.getElementById('period-out-week').innerText = formatRupiah(outWeek);
+      document.getElementById('period-in-month').innerText = formatRupiah(inMonth);
+      document.getElementById('period-out-month').innerText = formatRupiah(outMonth);
     }
 
     function updateChart() {
-  const ctx = document.getElementById('financeChart').getContext('2d');
-  if (financeChart) financeChart.destroy();
+      const ctx = document.getElementById('financeChart').getContext('2d');
+      if (financeChart) financeChart.destroy();
 
-  let totalIn = 0;
-  let totalOut = 0;
+      let totalIn = 0;
+      let totalOut = 0;
 
-  const sekarang = new Date();
-  
-  dataPemasukan.forEach(i => {
-    const tglData = new Date(i.tanggal);
-    const selisihHari = (sekarang - tglData) / (1000 * 60 * 60 * 24);
-    
-    if (currentChartPeriod === 'day' && i.tanggal === sekarang.toISOString().split('T')[0]) {
-      totalIn += (i.bri||0)+(i.bni||0)+(i.bca||0)+(i.bsi||0);
-    } else if (currentChartPeriod === 'week' && selisihHari <= 7) {
-      totalIn += (i.bri||0)+(i.bni||0)+(i.bca||0)+(i.bsi||0);
-    } else if (currentChartPeriod === 'month' && selisihHari <= 30) {
-      totalIn += (i.bri||0)+(i.bni||0)+(i.bca||0)+(i.bsi||0);
+      const sekarang = new Date();
+      sekarang.setHours(0,0,0,0);
+      const todayStr = getLocalDateString(sekarang);
+      
+      dataPemasukan.forEach(i => {
+        const tglData = new Date(i.tanggal + 'T00:00:00');
+        const selisihHari = Math.floor((sekarang - tglData) / (1000 * 60 * 60 * 24));
+        const rowIn = (i.bri || 0) + (i.bni || 0) + (i.bca || 0) + (i.bsi || 0);
+        
+        if (currentChartPeriod === 'day' && i.tanggal === todayStr) {
+          totalIn += rowIn;
+        } else if (currentChartPeriod === 'week' && selisihHari >= 0 && selisihHari < 7) {
+          totalIn += rowIn;
+        } else if (currentChartPeriod === 'month' && selisihHari >= 0 && selisihHari < 30) {
+          totalIn += rowIn;
+        }
+      });
+
+      dataPengeluaran.forEach(i => {
+        const tglData = new Date(i.tanggal + 'T00:00:00');
+        const selisihHari = Math.floor((sekarang - tglData) / (1000 * 60 * 60 * 24));
+        const rowOut = i.jumlah || 0;
+
+        if (currentChartPeriod === 'day' && i.tanggal === todayStr) {
+          totalOut += rowOut;
+        } else if (currentChartPeriod === 'week' && selisihHari >= 0 && selisihHari < 7) {
+          totalOut += rowOut;
+        } else if (currentChartPeriod === 'month' && selisihHari >= 0 && selisihHari < 30) {
+          totalOut += rowOut;
+        }
+      });
+
+      financeChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Pemasukan', 'Pengeluaran', 'Sisa Kas'],
+          datasets: [{
+            label: `Nominal Kas (${currentChartPeriod === 'day' ? 'Hari Ini' : currentChartPeriod === 'week' ? '7 Hari' : '30 Hari'})`,
+            data: [totalIn, totalOut, totalIn - totalOut],
+            backgroundColor: [
+              'rgba(56, 189, 248, 0.2)',
+              'rgba(239, 68, 68, 0.2)',
+              'rgba(16, 185, 129, 0.2)'
+            ],
+            borderColor: ['#38bdf8', '#ef4444', '#10b981'],
+            borderWidth: 2,
+            borderRadius: 8,
+            hoverBackgroundColor: [
+              'rgba(56, 189, 248, 0.35)',
+              'rgba(239, 68, 68, 0.35)',
+              'rgba(16, 185, 129, 0.35)'
+            ]
+          }]
+        },
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#94a3b8' } }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+            y: { grid: { color: 'rgba(255,255,255,0.02)' }, ticks: { color: '#94a3b8' } }
+          },
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          onHover: (event, chartElement) => {
+            event.native.target.style.cursor = chartElement.length ? 'pointer' : 'default';
+          }
+        }
+      });
     }
-  });
 
-  dataPengeluaran.forEach(i => {
-    const tglData = new Date(i.tanggal);
-    const selisihHari = (sekarang - tglData) / (1000 * 60 * 60 * 24);
+    function changeChartPeriod(p) { 
+      currentChartPeriod = p; 
+      
+      document.querySelectorAll('.btn-filter').forEach(btn => {
+        btn.style.background = 'rgba(255,255,255,0.02)';
+        btn.style.color = 'var(--text-main)';
+        btn.style.border = '1px solid var(--border)';
+        btn.style.fontWeight = '500';
+      });
 
-    if (currentChartPeriod === 'day' && i.tanggal === sekarang.toISOString().split('T')[0]) {
-      totalOut += (i.jumlah||0);
-    } else if (currentChartPeriod === 'week' && selisihHari <= 7) {
-      totalOut += (i.jumlah||0);
-    } else if (currentChartPeriod === 'month' && selisihHari <= 30) {
-      totalOut += (i.jumlah||0);
-    }
-  });
-
-  financeChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: ['Pemasukan', 'Pengeluaran', 'Sisa Kas'],
-      datasets: [{
-        label: `Nominal Kas (${currentChartPeriod === 'day' ? 'Hari Ini' : currentChartPeriod === 'week' ? '7 Hari' : '30 Hari'})`,
-        data: [totalIn, totalOut, totalIn - totalOut],
-        backgroundColor: [
-          'rgba(56, 189, 248, 0.2)',
-          'rgba(239, 68, 68, 0.2)',
-          'rgba(16, 185, 129, 0.2)'
-        ],
-        borderColor: ['#38bdf8', '#ef4444', '#10b981'],
-        borderWidth: 2,
-        borderRadius: 8,
-        hoverBackgroundColor: [
-          'rgba(56, 189, 248, 0.35)',
-          'rgba(239, 68, 68, 0.35)',
-          'rgba(16, 185, 129, 0.35)'
-        ]
-      }]
-    },
-    options: { 
-      responsive: true, 
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { labels: { color: '#94a3b8' } }
-      },
-      scales: {
-        x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
-        y: { grid: { color: 'rgba(255,255,255,0.02)' }, ticks: { color: '#94a3b8' } }
-      },
-      interaction: {
-        mode: 'index',
-        intersect: false
-      },
-      onHover: (event, chartElement) => {
-        event.native.target.style.cursor = chartElement.length ? 'pointer' : 'default';
+      const activeBtn = document.getElementById(`btn-filter-${p}`);
+      if (activeBtn) {
+        activeBtn.style.background = 'var(--accent)';
+        activeBtn.style.color = 'var(--bg-primary)';
+        activeBtn.style.border = 'none';
+        activeBtn.style.fontWeight = '600';
       }
+
+      updateChart(); 
     }
-  });
-}
 
-function changeChartPeriod(p) { 
-  currentChartPeriod = p; 
-  
-  document.querySelectorAll('.btn-filter').forEach(btn => {
-    btn.style.background = 'rgba(255,255,255,0.02)';
-    btn.style.color = 'var(--text-main)';
-    btn.style.border = '1px solid var(--border)';
-    btn.style.fontWeight = '500';
-  });
+    function updateLiveClock() {
+      const clockEl = document.getElementById('live-clock');
+      if (!clockEl) return;
+      
+      const options = {
+        timeZone: 'Asia/Jakarta',
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      };
+      
+      setInterval(() => {
+        const sekarang = new Date();
+        const formatter = new Intl.DateTimeFormat('id-ID', options);
+        clockEl.innerHTML = `● Server Time: ${formatter.format(sekarang)} WIB`;
+      }, 1000);
+    }
 
-  const activeBtn = document.getElementById(`btn-filter-${p}`);
-  if (activeBtn) {
-    activeBtn.style.background = 'var(--accent)';
-    activeBtn.style.color = 'var(--bg-primary)';
-    activeBtn.style.border = 'none';
-    activeBtn.style.fontWeight = '600';
-  }
+    document.getElementById('search-pemasukan').addEventListener('input', updateDashboardDisplay);
+    document.getElementById('search-pengeluaran').addEventListener('input', updateDashboardDisplay);
 
-  updateChart(); 
-}
+    window.addEventListener('DOMContentLoaded', () => {
+      fetchAllData();
+      updateLiveClock();
+    });
   </script>
 </body>
 </html>
