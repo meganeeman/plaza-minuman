@@ -532,8 +532,13 @@
         if (fallbackPage) fallbackPage.classList.add('active-page');
       }
 
-      // Menyembunyikan tombol Hub Utama bagi yang bukan Master/Owner demi keamanan portal
-      if (activeRole !== 'master' && activeRole !== 'owner') {
+      // Pengaturan visibilitas elemen navigasi berdasarkan hak akses per role
+      if (activeRole === 'master' || activeRole === 'owner') {
+        // Master dan Owner menggunakan gerbang Hub Utama, tombol Keluar bawaan di-hide
+        const btnLogout = document.getElementById('fin-logout-item');
+        if (btnLogout) btnLogout.style.display = 'none';
+      } else {
+        // Admin Finansial langsung log out dari halaman ini, gerbang Hub Utama di-hide
         const btnHub = document.getElementById('nav-item-hub');
         if (btnHub) btnHub.style.display = 'none';
       }
@@ -548,7 +553,7 @@
       <li><a href="#" class="nav-link" data-target="page-pemasukan">Input Pemasukan</a></li>
       <li><a href="#" class="nav-link" data-target="page-pengeluaran">Input Pengeluaran</a></li>
       <li id="nav-item-hub"><a href="index.html" class="hub-btn">Kembali Ke Hub</a></li>
-      <li><a href="#" class="logout-btn" id="fin-logout-btn">Keluar</a></li>
+      <li id="fin-logout-item"><a href="#" class="logout-btn" id="fin-logout-btn">Keluar</a></li>
     </ul>
   </nav>
 
@@ -871,7 +876,6 @@
         inBri += (item.bri || 0); inBni += (item.bni || 0); inBca += (item.bca || 0); inBsi += (item.bsi || 0);
         if (item.tanggal.includes(filterIn)) {
           let actionButtons = '';
-          // Hanya memunculkan aksi edit/hapus untuk master dan owner
           if (activeRole === 'master' || activeRole === 'owner') {
             actionButtons += `<button class="btn-table-edit" onclick="pemicuEditPemasukan(${item.id})">Edit</button>`;
             if (activeRole === 'master') {
@@ -909,7 +913,6 @@
 
         if (item.deskripsi.toLowerCase().includes(filterOut)) {
           let actionButtons = '';
-          // Hanya memunculkan aksi edit/hapus untuk master dan owner
           if (activeRole === 'master' || activeRole === 'owner') {
             actionButtons += `<button class="btn-table-edit" onclick="pemicuEditPengeluaran(${item.id})">Edit</button>`;
             if (activeRole === 'master') {
