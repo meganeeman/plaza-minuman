@@ -518,8 +518,10 @@
         <div class="card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h2>Analisis & Tren Finansial</h2>
-            <div class="chart-filters" style="display:none;">
-              <button onclick="changeChartPeriod('day')" class="btn-filter">Overview</button>
+            <div class="chart-filters" style="display: flex; gap: 8px;">
+              <button onclick="changeChartPeriod('day')" class="btn-filter active-filter" id="btn-filter-day" style="background: var(--accent); color: var(--bg-primary); border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">Hari Ini</button>
+              <button onclick="changeChartPeriod('week')" class="btn-filter" id="btn-filter-week" style="background: rgba(255,255,255,0.02); color: var(--text-main); border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500;">7 Hari Terakhir</button>
+              <button onclick="changeChartPeriod('month')" class="btn-filter" id="btn-filter-month" style="background: rgba(255,255,255,0.02); color: var(--text-main); border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500;">30 Hari Terakhir</button>
             </div>
           </div>
           <div class="chart-container">
@@ -941,69 +943,103 @@
     }
 
     function updateChart() {
-      const ctx = document.getElementById('financeChart').getContext('2d');
-      if (financeChart) financeChart.destroy();
-      let totalIn = 0; let totalOut = 0;
-      dataPemasukan.forEach(i => totalIn += (i.bri||0)+(i.bni||0)+(i.bca||0)+(i.bsi||0));
-      dataPengeluaran.forEach(i => totalOut += (i.jumlah||0));
+  const ctx = document.getElementById('financeChart').getContext('2d');
+  if (financeChart) financeChart.destroy();
 
-      financeChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: ['Total Pemasukan', 'Total Pengeluaran', 'Sisa Kas'],
-          datasets: [{
-            label: 'Nominal Kas Pusat',
-            data: [totalIn, totalOut, totalIn - totalOut],
-            backgroundColor: [
-              'rgba(56, 189, 248, 0.2)',
-              'rgba(239, 68, 68, 0.2)',
-              'rgba(16, 185, 129, 0.2)'
-            ],
-            borderColor: ['#38bdf8', '#ef4444', '#10b981'],
-            borderWidth: 2,
-            borderRadius: 8,
-            hoverBackgroundColor: [
-              'rgba(56, 189, 248, 0.35)',
-              'rgba(239, 68, 68, 0.35)',
-              'rgba(16, 185, 129, 0.35)'
-            ]
-          }]
-        },
-        options: { 
-          responsive: true, 
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { labels: { color: '#94a3b8' } }
-          },
-          scales: {
-            x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
-            y: { grid: { color: 'rgba(255,255,255,0.02)' }, ticks: { color: '#94a3b8' } }
-          },
-          interaction: {
-            mode: 'index',
-            intersect: false
-          },
-          onHover: (event, chartElement) => {
-            event.native.target.style.cursor = chartElement.length ? 'pointer' : 'default';
-          }
-        }
-      });
+  let totalIn = 0;
+  let totalOut = 0;
+
+  const sekarang = new Date();
+  
+  dataPemasukan.forEach(i => {
+    const tglData = new Date(i.tanggal);
+    const selisihHari = (sekarang - tglData) / (1000 * 60 * 60 * 24);
+    
+    if (currentChartPeriod === 'day' && i.tanggal === sekarang.toISOString().split('T')[0]) {
+      totalIn += (i.bri||0)+(i.bni||0)+(i.bca||0)+(i.bsi||0);
+    } else if (currentChartPeriod === 'week' && selisihHari <= 7) {
+      totalIn += (i.bri||0)+(i.bni||0)+(i.bca||0)+(i.bsi||0);
+    } else if (currentChartPeriod === 'month' && selisihHari <= 30) {
+      totalIn += (i.bri||0)+(i.bni||0)+(i.bca||0)+(i.bsi||0);
     }
+  });
 
-    function changeChartPeriod(p) { currentChartPeriod = p; updateChart(); }
+  dataPengeluaran.forEach(i => {
+    const tglData = new Date(i.tanggal);
+    const selisihHari = (sekarang - tglData) / (1000 * 60 * 60 * 24);
 
-    document.getElementById('search-pemasukan').addEventListener('input', updateDashboardDisplay);
-    document.getElementById('search-pengeluaran').addEventListener('input', updateDashboardDisplay);
+    if (currentChartPeriod === 'day' && i.tanggal === sekarang.toISOString().split('T')[0]) {
+      totalOut += (i.jumlah||0);
+    } else if (currentChartPeriod === 'week' && selisihHari <= 7) {
+      totalOut += (i.jumlah||0);
+    } else if (currentChartPeriod === 'month' && selisihHari <= 30) {
+      totalOut += (i.jumlah||0);
+    }
+  });
 
-    setInterval(() => {
-      const s = new Date();
-      document.getElementById('live-clock').innerText = `● ${s.toLocaleDateString('id-ID')} | ${s.toLocaleTimeString('id-ID')} WIB`;
-    }, 1000);
+  financeChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Pemasukan', 'Pengeluaran', 'Sisa Kas'],
+      datasets: [{
+        label: `Nominal Kas (${currentChartPeriod === 'day' ? 'Hari Ini' : currentChartPeriod === 'week' ? '7 Hari' : '30 Hari'})`,
+        data: [totalIn, totalOut, totalIn - totalOut],
+        backgroundColor: [
+          'rgba(56, 189, 248, 0.2)',
+          'rgba(239, 68, 68, 0.2)',
+          'rgba(16, 185, 129, 0.2)'
+        ],
+        borderColor: ['#38bdf8', '#ef4444', '#10b981'],
+        borderWidth: 2,
+        borderRadius: 8,
+        hoverBackgroundColor: [
+          'rgba(56, 189, 248, 0.35)',
+          'rgba(239, 68, 68, 0.35)',
+          'rgba(16, 185, 129, 0.35)'
+        ]
+      }]
+    },
+    options: { 
+      responsive: true, 
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#94a3b8' } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+        y: { grid: { color: 'rgba(255,255,255,0.02)' }, ticks: { color: '#94a3b8' } }
+      },
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
+      onHover: (event, chartElement) => {
+        event.native.target.style.cursor = chartElement.length ? 'pointer' : 'default';
+      }
+    }
+  });
+}
 
-    fetchAllData();
-    const tglStr = new Date().toISOString().split('T')[0];
-    document.getElementById('tgl-pemasukan').value = tglStr;
-    document.getElementById('tgl-pengeluaran').value = tglStr;
+function changeChartPeriod(p) { 
+  currentChartPeriod = p; 
+  
+  document.querySelectorAll('.btn-filter').forEach(btn => {
+    btn.style.background = 'rgba(255,255,255,0.02)';
+    btn.style.color = 'var(--text-main)';
+    btn.style.border = '1px solid var(--border)';
+    btn.style.fontWeight = '500';
+  });
+
+  const activeBtn = document.getElementById(`btn-filter-${p}`);
+  if (activeBtn) {
+    activeBtn.style.background = 'var(--accent)';
+    activeBtn.style.color = 'var(--bg-primary)';
+    activeBtn.style.border = 'none';
+    activeBtn.style.fontWeight = '600';
+  }
+
+  updateChart(); 
+}
   </script>
 </body>
 </html>
