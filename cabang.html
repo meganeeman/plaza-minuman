@@ -628,21 +628,12 @@
     if (!activeAdmin || (activeRole !== 'admin_cabang' && activeRole !== 'master')) {
       window.location.href = 'login.html';
     }
-
-    window.addEventListener('DOMContentLoaded', () => {
-      if (activeRole === 'master') {
-        const backBtn = `<li><a href="index.html" class="hub-btn">Kembali Ke Hub</a></li>`;
-        document.querySelector('.nav-menu').insertAdjacentHTML('beforeend', backBtn);
-        const logoutTrigger = document.getElementById('logout-trigger-item');
-        if (logoutTrigger) logoutTrigger.style.display = 'none';
-      }
-    });
   </script>
 
   <nav class="navbar">
     <div class="logo">Plaza <span>Minuman</span></div>
     <ul class="nav-menu">
-      <li><a href="#" class="nav-link active-link" data-target="page-overview">Dashboard</a></li>
+      <li id="nav-item-overview"><a href="#" class="nav-link active-link" data-target="page-overview">Dashboard</a></li>
       <li><a href="#" class="nav-link" data-target="page-input-laporan">Input Laporan</a></li>
       <li><a href="#" class="nav-link" data-target="page-piutang">Piutang Nasabah</a></li>
       <li><a href="#" class="nav-link" data-target="page-setor-bank">Setor Bank</a></li>
@@ -941,9 +932,25 @@
 
     document.querySelector('.subtitle span').innerText = activeName || activeAdmin;
 
-    if (activeRole === 'master') {
-      document.getElementById('master-panel-saldo').style.display = 'block';
-    }
+    window.addEventListener('DOMContentLoaded', () => {
+      if (activeRole === 'master') {
+        document.getElementById('master-panel-saldo').style.display = 'block';
+        const backBtn = `<li><a href="index.html" class="hub-btn">Kembali Ke Hub</a></li>`;
+        document.querySelector('.nav-menu').insertAdjacentHTML('beforeend', backBtn);
+        const logoutTrigger = document.getElementById('logout-trigger-item');
+        if (logoutTrigger) logoutTrigger.style.display = 'none';
+      } else if (activeRole === 'admin_cabang') {
+        document.getElementById('nav-item-overview').style.display = 'none';
+
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active-link'));
+        const fallbackTab = document.querySelector('[data-target="page-input-laporan"]');
+        if (fallbackTab) fallbackTab.classList.add('active-link');
+
+        document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active-page'));
+        const fallbackPage = document.getElementById('page-input-laporan');
+        if (fallbackPage) fallbackPage.classList.add('active-page');
+      }
+    });
 
     const logoutBtn = document.getElementById('logout-trigger');
     if (logoutBtn) {
