@@ -472,6 +472,119 @@
       font-style: italic;
     }
 
+    /* KOP & TANGGAL PRINT: Secara default disembunyikan di layar browser monitor */
+    .print-only-header {
+      display: none;
+    }
+
+    .print-only-footer {
+      display: none;
+    }
+
+    /* STYLE KHUSUS SAAT CETAK KE KERTAS ATAU SIMPAN SEBAGAI PDF */
+    @media print {
+
+      body,
+      html {
+        background: #ffffff !important;
+        color: #000000 !important;
+        background-image: none !important;
+        height: auto !important;
+      }
+
+      .navbar,
+      .chart-filters,
+      .btn-pdf,
+      #form-pemasukan,
+      #form-pengeluaran,
+      .search-input,
+      th:last-child,
+      td:last-child {
+        display: none !important;
+      }
+
+      .container {
+        padding: 20px 0 !important;
+        max-width: 100% !important;
+      }
+
+      .page-section {
+        display: block !important;
+        opacity: 1 !important;
+        transform: none !important;
+        page-break-after: always;
+      }
+
+      .page-section:last-of-type {
+        page-break-after: avoid;
+      }
+
+      .card,
+      .stat-card {
+        background: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        color: #000000 !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        margin-bottom: 25px !important;
+        page-break-inside: avoid;
+      }
+
+      .stat-card .value,
+      h1,
+      h2,
+      h3,
+      td,
+      th,
+      .bank-val {
+        color: #000000 !important;
+      }
+
+      table,
+      th,
+      td {
+        border-color: #cbd5e1 !important;
+      }
+
+      th {
+        background-color: #f1f5f9 !important;
+      }
+
+      /* Tampilkan Elemen Kop Surat Resmi & Info Tanggal Cetak */
+      .print-only-header {
+        display: block !important;
+        text-align: center;
+        border-bottom: 3px double #000000;
+        padding-bottom: 12px;
+        margin-bottom: 30px;
+      }
+
+      .print-only-header h1 {
+        font-size: 24px;
+        text-transform: uppercase;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+      }
+
+      .print-only-header p {
+        font-size: 12px;
+        color: #475569 !important;
+        margin-top: 4px;
+      }
+
+      .print-only-footer {
+        display: block !important;
+        margin-top: 50px;
+        border-top: 1px dashed #cbd5e1;
+        padding-top: 15px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        color: #475569 !important;
+        page-break-inside: avoid;
+      }
+    }
+
     @media (max-width: 900px) {
       .navbar {
         padding: 0 20px;
@@ -504,7 +617,7 @@
     const activeRole = localStorage.getItem('admin_role');
     const activeName = localStorage.getItem('admin_name');
 
-    // Menambahkan role admin_finansial ke whitelist halaman finansial pusat
+    // Menambahkan role admin_finansial ke whitelist halaman finansial pusat[cite: 4]
     if (!activeAdmin || (activeRole !== 'master' && activeRole !== 'owner' && activeRole !== 'admin_finansial')) {
       window.location.href = 'login.html';
     }
@@ -517,33 +630,39 @@
         document.getElementById('page-pemasukan').insertAdjacentHTML('afterbegin', infoMsg);
         document.getElementById('page-pengeluaran').insertAdjacentHTML('afterbegin', infoMsg);
       } else if (activeRole === 'admin_finansial') {
-        // 1. Sembunyikan tab dashboard pusat dari navbar
+        // 1. Sembunyikan tab dashboard pusat dari navbar[cite: 4]
         const navDashboard = document.getElementById('nav-item-dashboard');
         if (navDashboard) navDashboard.style.display = 'none';
 
-        // 2. Alihkan tab aktif secara paksa langsung ke Input Pemasukan
+        // 2. Alihkan tab aktif secara paksa langsung ke Input Pemasukan[cite: 4]
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active-link'));
         const fallbackTab = document.querySelector('[data-target="page-pemasukan"]');
         if (fallbackTab) fallbackTab.classList.add('active-link');
 
-        // 3. Sembunyikan section page-dashboard, buka section page-pemasukan
+        // 3. Sembunyikan section page-dashboard, buka section page-pemasukan[cite: 4]
         document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active-page'));
         const fallbackPage = document.getElementById('page-pemasukan');
         if (fallbackPage) fallbackPage.classList.add('active-page');
       }
 
-      // Pengaturan visibilitas elemen navigasi berdasarkan hak akses per role
+      // Pengaturan visibilitas elemen navigasi berdasarkan hak akses per role[cite: 4]
       if (activeRole === 'master' || activeRole === 'owner') {
-        // Master dan Owner menggunakan gerbang Hub Utama, tombol Keluar bawaan di-hide
+        // Master dan Owner menggunakan gerbang Hub Utama, tombol Keluar bawaan di-hide[cite: 4]
         const btnLogout = document.getElementById('fin-logout-item');
         if (btnLogout) btnLogout.style.display = 'none';
       } else {
-        // Admin Finansial langsung log out dari halaman ini, gerbang Hub Utama di-hide
+        // Admin Finansial langsung log out dari halaman ini, gerbang Hub Utama di-hide[cite: 4]
         const btnHub = document.getElementById('nav-item-hub');
         if (btnHub) btnHub.style.display = 'none';
       }
     });
   </script>
+
+  <!-- KOP SURAT STRUKTUR RESMI: Otomatis tampil di posisi atas lembar PDF hasil print -->
+  <div class="print-only-header">
+    <h1>Plaza Minuman</h1>
+    <p>Laporan Konsolidasi Finansial Pusat Terintegrasi Cloud Server</p>
+  </div>
 
   <nav class="navbar">
     <div class="logo">Plaza <span>Minuman</span></div>
@@ -791,6 +910,12 @@
       </div>
     </section>
 
+  </div>
+
+  <!-- TANGGAL & VALIDATOR PRINT: Otomatis terpasang dinamis di dasar lembaran halaman cetak PDF -->
+  <div class="print-only-footer">
+    <div id="print-timestamp">Dicetak pada: -</div>
+    <div id="print-user-signature">Sistem Informasi Finansial Pusat</div>
   </div>
 
   <script>
@@ -1231,6 +1356,23 @@
         clockEl.innerHTML = `● Server Time: ${formatter.format(sekarang)} WIB`;
       }, 1000);
     }
+
+    // Menghasilkan data tanggal dinamis di footer saat dicetak ke PDF
+    function preparePrintMetadata() {
+      const skrg = new Date();
+      const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+      const formatWaktu = skrg.toLocaleDateString('id-ID', options);
+
+      document.getElementById('print-timestamp').innerText = `Dicetak otomatis pada: ${formatWaktu} WIB`;
+      document.getElementById('print-user-signature').innerText = `Otorisasi Validator: ${activeName || activeAdmin} (${activeRole.toUpperCase()})`;
+    }
+
+    // Intersepsi perintah window.print bawaan untuk memasang metadata terbaru
+    const originalPrint = window.print;
+    window.print = function () {
+      preparePrintMetadata();
+      originalPrint();
+    };
 
     document.getElementById('search-pemasukan').addEventListener('input', updateDashboardDisplay);
     document.getElementById('search-pengeluaran').addEventListener('input', updateDashboardDisplay);
