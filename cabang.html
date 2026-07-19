@@ -1043,6 +1043,7 @@
       let accumOutCash = 0;
       let accumOutTrf = 0;
       let accumCashAktual = 0;
+      let accumTransferAktual = 0;
       let accumSetoran = 0;
 
       dataLaporan.forEach(item => {
@@ -1057,6 +1058,7 @@
         accumOutCash += (item.pengeluaran_cash || 0);
         accumOutTrf += (item.pengeluaran_transfer || 0);
         accumCashAktual += (item.cash_aktual || 0);
+        accumTransferAktual += (item.transfer_aktual || 0);
       });
 
       dataSetor.forEach(item => {
@@ -1065,7 +1067,7 @@
 
       const sisaCashDiToko = accumCashAktual - accumOutCash - accumSetoran;
       const totalPengeluaran = accumOutCash + accumOutTrf;
-      const saldoBRIKalkulasi = saldoAwalBankGlobal + accumSetoran - accumOutTrf;
+      const saldoBRIKalkulasi = saldoAwalBankGlobal + accumTransferAktual + accumSetoran - accumOutTrf;
 
       document.getElementById('dash-omset').innerText = formatRupiah(accumOmset);
       document.getElementById('dash-pengeluaran').innerText = formatRupiah(totalPengeluaran);
