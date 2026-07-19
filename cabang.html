@@ -1115,11 +1115,12 @@
       if(activeRole !== 'master') return;
       
       const newAmt = cleanRupiahValue(document.getElementById('master-saldo-input').value);
-      const { error } = await clientSupabase.from('konfigurasi_cabang').update({
+      const { error } = await clientSupabase.from('konfigurasi_cabang').upsert({
+         id: 1,
         saldo_awal_bank: newAmt,
-        admin_ubah: activeName || activeAdmin,
+         admin_ubah: activeName || activeAdmin,
         updated_at: new Date().toISOString()
-      }).eq('id', 1);
+     });
 
       if(!error) {
         alert('Saldo awal buku resmi berhasil diperbarui oleh Master!');
