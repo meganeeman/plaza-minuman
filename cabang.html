@@ -17,6 +17,7 @@
       --text-muted: #64748b;
       --success: #10b981;
       --danger: #ef4444;
+      --warning: #eab308;
       --border: rgba(255, 255, 255, 0.04);
     }
 
@@ -164,6 +165,29 @@
       margin-bottom: 20px;
     }
 
+    .alert-container {
+      margin-bottom: 25px;
+    }
+
+    .alert-box {
+      background: rgba(234, 179, 8, 0.1);
+      border: 1px solid rgba(234, 179, 8, 0.2);
+      border-radius: 12px;
+      padding: 16px 20px;
+      color: #fef08a;
+      font-size: 13px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .alert-box.danger-alert {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+    }
+
     .summary-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -195,7 +219,7 @@
     .stat-card.omset::before { background-color: var(--accent); }
     .stat-card.pengeluaran::before { background-color: var(--danger); }
     .stat-card.cash::before { background-color: var(--success); }
-    .stat-card.bank::before { background-color: #eab308; }
+    .stat-card.bank::before { background-color: var(--warning); }
 
     .stat-card h3 {
       font-size: 11px;
@@ -532,6 +556,19 @@
         </div>
       </div>
 
+      <div class="alert-container" id="piutang-alert-area"></div>
+
+      <div class="card" id="master-panel-saldo" style="display:none; border-color:var(--warning) !important; margin-bottom:25px;">
+        <h2 style="color:var(--warning); margin-bottom:10px; font-size:15px;">Panel Kontrol Master: Set Saldo Awal Buku Bulan Depan</h2>
+        <form id="form-saldo-awal-master" style="display:flex; gap:15px; align-items:flex-end; flex-wrap:wrap;">
+          <div class="form-group" style="margin-bottom:0; flex:1; min-width:240px;">
+            <label>Saldo Rekening Awal Bank Resmi (Rp)</label>
+            <input type="text" id="master-saldo-input" class="rupiah-mask" value="Rp 0">
+          </div>
+          <button type="submit" style="background:var(--warning); color:#060913; width:auto; padding:14px 24px; height:48px;">Perbarui Saldo Buku</button>
+        </form>
+      </div>
+
       <div class="summary-grid">
         <div class="stat-card omset">
           <h3>Total Omset Hari Ini</h3>
@@ -546,7 +583,7 @@
           <div class="value" id="dash-cash">Rp 0</div>
         </div>
         <div class="stat-card bank">
-          <h3>Saldo Rekening BRI</h3>
+          <h3>Saldo Resmi Bank (BRI)</h3>
           <div class="value" id="dash-bank">Rp 0</div>
         </div>
       </div>
@@ -581,7 +618,7 @@
       <div class="header-block">
         <div class="header-text">
           <h1>Pencatatan Laporan Harian</h1>
-          <div class="subtitle">Input saldo awal toko, penerimaan penjualan murni harian serta perincian detail pengeluaran dana lapangan.</div>
+          <div class="subtitle">Input penerimaan penjualan murni harian serta perincian detail pengeluaran dana lapangan.</div>
         </div>
       </div>
 
@@ -589,15 +626,9 @@
         <form id="form-laporan-harian">
           <input type="hidden" id="edit-id-laporan">
           
-          <div class="form-row">
-            <div class="form-group">
-              <label for="lap-tanggal">Tanggal Operasional</label>
-              <input type="date" id="lap-tanggal" onclick="this.showPicker()" required>
-            </div>
-            <div class="form-group">
-              <label for="lap-saldo-awal">Saldo Awal Uang Cash (Di luar Omset) (Rp)</label>
-              <input type="text" id="lap-saldo-awal" class="rupiah-mask" value="Rp 0" required>
-            </div>
+          <div class="form-group">
+            <label for="lap-tanggal">Tanggal Operasional</label>
+            <input type="date" id="lap-tanggal" onclick="this.showPicker()" required>
           </div>
 
           <div class="form-row">
@@ -655,8 +686,7 @@
             <thead>
               <tr>
                 <th>Tanggal</th>
-                <th>Omset Otomatis</th>
-                <th>Saldo Awal</th>
+                <th>Omset Murni</th>
                 <th>Cash Masuk</th>
                 <th>Trf Masuk</th>
                 <th>Total Out</th>
@@ -795,6 +825,10 @@
 
     document.querySelector('.subtitle span').innerText = activeName || activeAdmin;
 
+    if (activeRole === 'master') {
+      document.getElementById('master-panel-saldo').style.display = 'block';
+    }
+
     const logoutBtn = document.getElementById('logout-trigger');
     if (logoutBtn) {
       logoutBtn.addEventListener('click', function(e) {
@@ -829,6 +863,7 @@
     let dataLaporan = [];
     let dataSetor = [];
     let dataPiutang = [];
+    let saldoAwalBankGlobal = 0;
     let cChart = null;
 
     const formatRupiah = (angka) => 'Rp ' + parseInt(angka).toLocaleString('id-ID');
@@ -855,6 +890,12 @@
 
     async function fetchDataAll() {
       try {
+        const { data: configData } = await clientSupabase.from('konfigurasi_cabang').select('saldo_awal_bank').eq('id', 1).single();
+        if (configData) {
+          saldoAwalBankGlobal = configData.saldo_awal_bank || 0;
+          document.getElementById('master-saldo-input').value = formatRupiah(saldoAwalBankGlobal);
+        }
+
         const resLap = await clientSupabase.from('laporan_cabang').select('*').order('tanggal', { ascending: false });
         const resSetor = await clientSupabase.from('setor_bank_cabang').select('*').order('tanggal_setor', { ascending: false });
         const resPiutang = await clientSupabase.from('piutang').select('*').order('tanggal_piutang', { ascending: false });
@@ -867,6 +908,7 @@
         renderLaporanTable();
         renderPiutangTable();
         renderSetorTable();
+        checkPiutangJatuhTempoAlerts();
         initChartTren();
       } catch (err) {
         console.error(err);
@@ -879,7 +921,6 @@
       let accumOutTrf = 0;
       let accumCashAktual = 0;
       let accumSetoran = 0;
-      let accumSaldoAwal = 0;
 
       dataLaporan.forEach(item => {
         const pmskn = (item.cash_aktual || 0) + (item.transfer_aktual || 0);
@@ -893,16 +934,15 @@
         accumOutCash += (item.pengeluaran_cash || 0);
         accumOutTrf += (item.pengeluaran_transfer || 0);
         accumCashAktual += (item.cash_aktual || 0);
-        accumSaldoAwal += (item.saldo_awal_cash || 0);
       });
 
       dataSetor.forEach(item => {
         accumSetoran += (item.jumlah_setoran || 0);
       });
 
-      const sisaCashDiToko = accumSaldoAwal + accumCashAktual - accumOutCash - accumSetoran;
+      const sisaCashDiToko = accumCashAktual - accumOutCash - accumSetoran;
       const totalPengeluaran = accumOutCash + accumOutTrf;
-      const saldoBRIKalkulasi = accumSetoran - accumOutTrf;
+      const saldoBRIKalkulasi = saldoAwalBankGlobal + accumSetoran - accumOutTrf;
 
       document.getElementById('dash-omset').innerText = formatRupiah(accumOmset);
       document.getElementById('dash-pengeluaran').innerText = formatRupiah(totalPengeluaran);
@@ -927,6 +967,36 @@
       });
     }
 
+    function checkPiutangJatuhTempoAlerts() {
+      const alertArea = document.getElementById('piutang-alert-area');
+      alertArea.innerHTML = '';
+      
+      const hariIni = new Date();
+      hariIni.setHours(0,0,0,0);
+
+      let noticesWarning = [];
+      let noticesDanger = [];
+
+      dataPiutang.forEach(p => {
+        const tglTempo = new Date(p.jatuh_tempo + 'T00:00:00');
+        const selisihMili = tglTempo - hariIni;
+        const selisihHari = Math.round(selisihMili / (1000 * 60 * 60 * 24));
+
+        if (selisihHari >= 0 && selisihHari <= 3) {
+          noticesWarning.push(`⚠️ Nota <strong>${p.no_nota}</strong> a.n <strong>${p.nama_nasabah}</strong> sebesar ${formatRupiah(p.nominal)} akan jatuh tempo dalam ${selisihHari} hari (${p.jatuh_tempo}).`);
+        } else if (selisihHari < 0 && selisihHari >= -3) {
+          noticesDanger.push(`🚨 Perhatian! Nota <strong>${p.no_nota}</strong> a.n <strong>${p.nama_nasabah}</strong> (${formatRupiah(p.nominal)}) telah **TERLEWAT** ${Math.abs(selisihHari)} hari dari jatuh tempo!`);
+        }
+      });
+
+      if (noticesDanger.length > 0) {
+        alertArea.innerHTML += `<div class="alert-box danger-alert"><div>${noticesDanger.join('<br>')}</div></div>`;
+      }
+      if (noticesWarning.length > 0) {
+        alertArea.innerHTML += `<div class="alert-box"><div>${noticesWarning.join('<br>')}</div></div>`;
+      }
+    }
+
     function renderLaporanTable() {
       const filter = document.getElementById('search-laporan').value.toLowerCase();
       const tbody = document.querySelector('#table-laporan tbody');
@@ -948,7 +1018,6 @@
             <tr class="clickable-row" onclick="bukaDetailModal(${item.id})">
               <td>${item.tanggal}</td>
               <td style="color:var(--accent); font-weight:600;">${formatRupiah(omsetRowCalculated)}</td>
-              <td style="color:var(--text-muted);">${formatRupiah(item.saldo_awal_cash || 0)}</td>
               <td>${formatRupiah(item.cash_aktual || 0)}</td>
               <td>${formatRupiah(item.transfer_aktual || 0)}</td>
               <td style="color:var(--danger);">${formatRupiah(pengeluaranRow)}</td>
@@ -1024,7 +1093,6 @@
       const body = document.getElementById('modal-details-body');
       body.innerHTML = `
         <div class="detail-item"><span class="detail-label">Tanggal Operasional</span><span class="detail-val">${target.tanggal}</span></div>
-        <div class="detail-item"><span class="detail-label">Saldo Awal Cash</span><span class="detail-val">${formatRupiah(target.saldo_awal_cash || 0)}</span></div>
         <div class="detail-item"><span class="detail-label">Pemasukan Uang Cash</span><span class="detail-val" style="color:var(--success);">${formatRupiah(target.cash_aktual || 0)}</span></div>
         <div class="detail-item"><span class="detail-label">Pemasukan Uang Transfer</span><span class="detail-val" style="color:var(--accent);">${formatRupiah(target.transfer_aktual || 0)}</span></div>
         <div class="detail-item"><span class="detail-label">Pengeluaran - CASH</span><span class="detail-val" style="color:var(--danger);">${formatRupiah(target.pengeluaran_cash || 0)}</span></div>
@@ -1042,12 +1110,30 @@
       document.getElementById('detailModal').style.display = 'none';
     };
 
+    document.getElementById('form-saldo-awal-master').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      if(activeRole !== 'master') return;
+      
+      const newAmt = cleanRupiahValue(document.getElementById('master-saldo-input').value);
+      const { error } = await clientSupabase.from('konfigurasi_cabang').update({
+        saldo_awal_bank: newAmt,
+        admin_ubah: activeName || activeAdmin,
+        updated_at: new Date().toISOString()
+      }).eq('id', 1);
+
+      if(!error) {
+        alert('Saldo awal buku resmi berhasil diperbarui oleh Master!');
+        fetchDataAll();
+      } else {
+        alert('Gagal memperbarui saldo konfigurasi pusat!');
+      }
+    });
+
     window.pemicuEditLaporan = function(id) {
       const target = dataLaporan.find(i => i.id === id);
       if (!target) return;
       document.getElementById('edit-id-laporan').value = target.id;
       document.getElementById('lap-tanggal').value = target.tanggal;
-      document.getElementById('lap-saldo-awal').value = formatRupiah(target.saldo_awal_cash || 0);
       document.getElementById('lap-cash-aktual').value = formatRupiah(target.cash_aktual || 0);
       document.getElementById('lap-transfer-aktual').value = formatRupiah(target.transfer_aktual || 0);
       document.getElementById('lap-out-cash').value = formatRupiah(target.pengeluaran_cash || 0);
@@ -1135,7 +1221,6 @@
 
       const paketData = {
         tanggal: document.getElementById('lap-tanggal').value,
-        saldo_awal_cash: cleanRupiahValue(document.getElementById('lap-saldo-awal').value),
         cash_aktual: cleanRupiahValue(document.getElementById('lap-cash-aktual').value),
         transfer_aktual: cleanRupiahValue(document.getElementById('lap-transfer-aktual').value),
         pengeluaran_cash: outCash,
