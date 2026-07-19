@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,7 +29,8 @@
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
     }
 
-    html, body {
+    html,
+    body {
       height: 100%;
       background-color: var(--bg-primary);
       color: var(--text-main);
@@ -127,8 +129,15 @@
     }
 
     @keyframes pageReveal {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .header-block {
@@ -195,7 +204,8 @@
       margin-bottom: 30px;
     }
 
-    .stat-card, .card {
+    .stat-card,
+    .card {
       background: rgba(21, 29, 48, 0.35) !important;
       backdrop-filter: blur(20px) !important;
       -webkit-backdrop-filter: blur(20px) !important;
@@ -216,10 +226,21 @@
       height: 100%;
     }
 
-    .stat-card.omset::before { background-color: var(--accent); }
-    .stat-card.pengeluaran::before { background-color: var(--danger); }
-    .stat-card.cash::before { background-color: var(--success); }
-    .stat-card.bank::before { background-color: var(--warning); }
+    .stat-card.omset::before {
+      background-color: var(--accent);
+    }
+
+    .stat-card.pengeluaran::before {
+      background-color: var(--danger);
+    }
+
+    .stat-card.cash::before {
+      background-color: var(--success);
+    }
+
+    .stat-card.bank::before {
+      background-color: var(--warning);
+    }
 
     .stat-card h3 {
       font-size: 11px;
@@ -237,10 +258,21 @@
       margin-top: 4px;
     }
 
-    .stat-card.omset .value { color: var(--accent); }
-    .stat-card.pengeluaran .value { color: var(--danger); }
-    .stat-card.cash .value { color: var(--success); }
-    .stat-card.bank .value { color: #fde047; }
+    .stat-card.omset .value {
+      color: var(--accent);
+    }
+
+    .stat-card.pengeluaran .value {
+      color: var(--danger);
+    }
+
+    .stat-card.cash .value {
+      color: var(--success);
+    }
+
+    .stat-card.bank .value {
+      color: #fde047;
+    }
 
     .grid-dashboard-bottom {
       display: grid;
@@ -271,7 +303,8 @@
       color: #94a3b8;
     }
 
-    .form-group input, .form-group select {
+    .form-group input,
+    .form-group select {
       width: 100%;
       padding: 14px 16px;
       border: 1px solid var(--border);
@@ -282,7 +315,8 @@
       transition: all 0.2s;
     }
 
-    .form-group input:focus, .form-group select:focus {
+    .form-group input:focus,
+    .form-group select:focus {
       outline: none;
       border-color: var(--accent);
       box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
@@ -356,7 +390,8 @@
       font-size: 14px;
     }
 
-    th, td {
+    th,
+    td {
       padding: 16px 20px;
       border-bottom: 1px solid var(--border);
       text-align: left;
@@ -441,8 +476,10 @@
     .custom-modal {
       display: none;
       position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       background-color: rgba(6, 9, 19, 0.8);
       backdrop-filter: blur(8px);
       z-index: 2000;
@@ -457,13 +494,20 @@
       max-width: 500px;
       border-radius: 16px;
       padding: 24px;
-      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
       animation: modalReveal 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     @keyframes modalReveal {
-      from { opacity: 0; transform: scale(0.95); }
-      to { opacity: 1; transform: scale(1); }
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
     }
 
     .modal-header {
@@ -491,12 +535,18 @@
       display: flex;
       justify-content: space-between;
       padding: 10px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.02);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.02);
       font-size: 14px;
     }
 
-    .detail-label { color: var(--text-muted); }
-    .detail-val { font-weight: 500; color: var(--text-main); }
+    .detail-label {
+      color: var(--text-muted);
+    }
+
+    .detail-val {
+      font-weight: 500;
+      color: var(--text-main);
+    }
 
     @media (max-width: 1024px) {
       .grid-dashboard-bottom {
@@ -505,19 +555,39 @@
     }
 
     @media (max-width: 900px) {
-      .navbar { padding: 0 20px; height: auto; flex-direction: column; padding-bottom: 12px; }
-      .logo { margin-top: 12px; margin-bottom: 12px; }
-      .container { padding: 160px 20px 40px 20px; }
-      .table-header-flex { flex-direction: column; align-items: flex-start; }
-      .search-input { width: 100%; }
+      .navbar {
+        padding: 0 20px;
+        height: auto;
+        flex-direction: column;
+        padding-bottom: 12px;
+      }
+
+      .logo {
+        margin-top: 12px;
+        margin-bottom: 12px;
+      }
+
+      .container {
+        padding: 160px 20px 40px 20px;
+      }
+
+      .table-header-flex {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .search-input {
+        width: 100%;
+      }
     }
   </style>
 </head>
+
 <body>
 
   <script>
     const activeAdmin = localStorage.getItem('current_admin');
-    const activeRole = localStorage.getItem('admin_role'); 
+    const activeRole = localStorage.getItem('admin_role');
     const activeName = localStorage.getItem('admin_name');
 
     if (!activeAdmin || (activeRole !== 'admin_cabang' && activeRole !== 'master')) {
@@ -551,21 +621,26 @@
       <div class="header-block">
         <div class="header-text">
           <h1>Dashboard Ringkasan Cabang</h1>
-          <div class="subtitle">Halo, <span style="color:var(--accent); font-weight:600;">======</span>! Berikut visualisasi rekap operasional tokomu.</div>
+          <div class="subtitle">Halo, <span style="color:var(--accent); font-weight:600;">======</span>! Berikut
+            visualisasi rekap operasional tokomu.</div>
           <div id="live-clock" style="font-size: 12px; color: #64748b; margin-top: 8px;">● Memuat waktu server...</div>
         </div>
       </div>
 
       <div class="alert-container" id="piutang-alert-area"></div>
 
-      <div class="card" id="master-panel-saldo" style="display:none; border-color:var(--warning) !important; margin-bottom:25px;">
-        <h2 style="color:var(--warning); margin-bottom:10px; font-size:15px;">Panel Kontrol Master: Set Saldo Awal Buku Bulan Depan</h2>
+      <div class="card" id="master-panel-saldo"
+        style="display:none; border-color:var(--warning) !important; margin-bottom:25px;">
+        <h2 style="color:var(--warning); margin-bottom:10px; font-size:15px;">Panel Kontrol Master: Set Saldo Awal Buku
+          Bulan Depan</h2>
         <form id="form-saldo-awal-master" style="display:flex; gap:15px; align-items:flex-end; flex-wrap:wrap;">
           <div class="form-group" style="margin-bottom:0; flex:1; min-width:240px;">
             <label>Saldo Rekening Awal Bank Resmi (Rp)</label>
             <input type="text" id="master-saldo-input" class="rupiah-mask" value="Rp 0">
           </div>
-          <button type="submit" style="background:var(--warning); color:#060913; width:auto; padding:14px 24px; height:48px;">Perbarui Saldo Buku</button>
+          <button type="submit"
+            style="background:var(--warning); color:#060913; width:auto; padding:14px 24px; height:48px;">Perbarui Saldo
+            Buku</button>
         </form>
       </div>
 
@@ -618,14 +693,15 @@
       <div class="header-block">
         <div class="header-text">
           <h1>Pencatatan Laporan Harian</h1>
-          <div class="subtitle">Input penerimaan penjualan murni harian serta perincian detail pengeluaran dana lapangan.</div>
+          <div class="subtitle">Input penerimaan penjualan murni harian serta perincian detail pengeluaran dana
+            lapangan.</div>
         </div>
       </div>
 
       <div class="card">
         <form id="form-laporan-harian">
           <input type="hidden" id="edit-id-laporan">
-          
+
           <div class="form-group">
             <label for="lap-tanggal">Tanggal Operasional</label>
             <input type="date" id="lap-tanggal" onclick="this.showPicker()" required>
@@ -671,14 +747,16 @@
             <label for="lap-nota">Tautan Bukti Dokumen / Nota Fisik (Opsional)</label>
             <input type="url" id="lap-nota" placeholder="https://drive.google.com/drive/folders/...">
           </div>
-          
+
           <button type="submit" id="btn-submit-laporan">Simpan Laporan Harian</button>
         </form>
       </div>
 
       <div class="card">
         <div class="table-header-flex">
-          <h2>Log Riwayat Input Laporan <span style="font-size:11px; color:var(--accent); font-weight:normal; margin-left:8px;">*Klik baris untuk melihat detail</span></h2>
+          <h2>Log Riwayat Input Laporan <span
+              style="font-size:11px; color:var(--accent); font-weight:normal; margin-left:8px;">*Klik baris untuk
+              melihat detail</span></h2>
           <input type="text" id="search-laporan" class="search-input" placeholder="Cari tanggal...">
         </div>
         <div class="table-responsive">
@@ -767,7 +845,8 @@
       <div class="header-block">
         <div class="header-text">
           <h1>Form Setor Bank BRI</h1>
-          <div class="subtitle">Validasi pemindahan dana cash aktual lapangan masuk menjadi saldo resmi rekening bank.</div>
+          <div class="subtitle">Validasi pemindahan dana cash aktual lapangan masuk menjadi saldo resmi rekening bank.
+          </div>
         </div>
       </div>
 
@@ -784,7 +863,8 @@
               <input type="text" id="setor-jumlah" class="rupiah-mask" value="Rp 0" required>
             </div>
           </div>
-          <button type="submit" id="btn-submit-setor" style="background: #eab308; color: #060913;">Konfirmasi Setor Bank & Pengenolan Cash</button>
+          <button type="submit" id="btn-submit-setor" style="background: #eab308; color: #060913;">Konfirmasi Setor Bank
+            & Pengenolan Cash</button>
         </form>
       </div>
 
@@ -831,9 +911,9 @@
 
     const logoutBtn = document.getElementById('logout-trigger');
     if (logoutBtn) {
-      logoutBtn.addEventListener('click', function(e) {
+      logoutBtn.addEventListener('click', function (e) {
         e.preventDefault();
-        if(confirm('Apakah kamu yakin ingin keluar?')) {
+        if (confirm('Apakah kamu yakin ingin keluar?')) {
           localStorage.clear();
           window.location.href = 'login.html';
         }
@@ -851,10 +931,10 @@
 
         const target = link.getAttribute('data-target');
         pages.forEach(p => {
-          if(p.id === target) p.classList.add('active-page');
+          if (p.id === target) p.classList.add('active-page');
           else p.classList.remove('active-page');
         });
-        if(target === 'page-overview') {
+        if (target === 'page-overview') {
           fetchDataAll();
         }
       });
@@ -878,9 +958,9 @@
     };
 
     document.querySelectorAll('.rupiah-mask').forEach(input => {
-      input.addEventListener('focus', function() { if (this.value === 'Rp 0') this.value = ''; });
-      input.addEventListener('blur', function() { if (this.value === '') this.value = 'Rp 0'; });
-      input.addEventListener('input', function() {
+      input.addEventListener('focus', function () { if (this.value === 'Rp 0') this.value = ''; });
+      input.addEventListener('blur', function () { if (this.value === '') this.value = 'Rp 0'; });
+      input.addEventListener('input', function () {
         const pos = this.selectionStart;
         const oldLen = this.value.length;
         this.value = formatInputRupiah(this.value);
@@ -899,7 +979,7 @@
         const resLap = await clientSupabase.from('laporan_cabang').select('*').order('tanggal', { ascending: false });
         const resSetor = await clientSupabase.from('setor_bank_cabang').select('*').order('tanggal_setor', { ascending: false });
         const resPiutang = await clientSupabase.from('piutang').select('*').order('tanggal_piutang', { ascending: false });
-        
+
         if (!resLap.error) dataLaporan = resLap.data || [];
         if (!resSetor.error) dataSetor = resSetor.data || [];
         if (!resPiutang.error) dataPiutang = resPiutang.data || [];
@@ -925,7 +1005,7 @@
       dataLaporan.forEach(item => {
         const pmskn = (item.cash_aktual || 0) + (item.transfer_aktual || 0);
         const pengeluaran = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
-        
+
         const piutangHariIni = dataPiutang
           .filter(p => p.tanggal_piutang === item.tanggal)
           .reduce((sum, p) => sum + (p.nominal || 0), 0);
@@ -970,9 +1050,9 @@
     function checkPiutangJatuhTempoAlerts() {
       const alertArea = document.getElementById('piutang-alert-area');
       alertArea.innerHTML = '';
-      
+
       const hariIni = new Date();
-      hariIni.setHours(0,0,0,0);
+      hariIni.setHours(0, 0, 0, 0);
 
       let noticesWarning = [];
       let noticesDanger = [];
@@ -982,18 +1062,20 @@
         const selisihMili = tglTempo - hariIni;
         const selisihHari = Math.round(selisihMili / (1000 * 60 * 60 * 24));
 
-        if (selisihHari >= 0 && selisihHari <= 3) {
-          noticesWarning.push(`⚠️ Nota <strong>${p.no_nota}</strong> a.n <strong>${p.nama_nasabah}</strong> sebesar ${formatRupiah(p.nominal)} akan jatuh tempo dalam ${selisihHari} hari (${p.jatuh_tempo}).`);
+        if (selisihHari === 0) {
+          noticesDanger.push(`🚨 **HARI INI!** Nota <strong>${p.no_nota}</strong> a.n <strong>${p.nama_nasabah}</strong> sebesar ${formatRupiah(p.nominal)} jatuh tempo **HARI INI** (${p.jatuh_tempo}). Hubungi nasabah sekarang juga untuk penagihan pembayaran!`);
         } else if (selisihHari < 0 && selisihHari >= -3) {
           noticesDanger.push(`🚨 Perhatian! Nota <strong>${p.no_nota}</strong> a.n <strong>${p.nama_nasabah}</strong> (${formatRupiah(p.nominal)}) telah **TERLEWAT** ${Math.abs(selisihHari)} hari dari jatuh tempo!`);
+        } else if (selisihHari > 0 && selisihHari <= 3) {
+          noticesWarning.push(`⚠️ Nota <strong>${p.no_nota}</strong> a.n <strong>${p.nama_nasabah}</strong> sebesar ${formatRupiah(p.nominal)} akan jatuh tempo dalam ${selisihHari} hari (${p.jatuh_tempo}).`);
         }
       });
 
       if (noticesDanger.length > 0) {
-        alertArea.innerHTML += `<div class="alert-box danger-alert"><div>${noticesDanger.join('<br>')}</div></div>`;
+        alertArea.innerHTML += `<div class="alert-box danger-alert"><div>${noticesDanger.join('<br><br>')}</div></div>`;
       }
       if (noticesWarning.length > 0) {
-        alertArea.innerHTML += `<div class="alert-box"><div>${noticesWarning.join('<br>')}</div></div>`;
+        alertArea.innerHTML += `<div class="alert-box"><div>${noticesWarning.join('<br><br>')}</div></div>`;
       }
     }
 
@@ -1076,13 +1158,13 @@
       });
     }
 
-    window.bukaDetailModal = function(id) {
+    window.bukaDetailModal = function (id) {
       const target = dataLaporan.find(i => i.id === id);
       if (!target) return;
-      
+
       const targetPiutang = dataPiutang.filter(p => p.tanggal_piutang === target.tanggal);
       let listPiutangHTML = '';
-      if(targetPiutang.length > 0) {
+      if (targetPiutang.length > 0) {
         targetPiutang.forEach(p => {
           listPiutangHTML += `<div style="font-size:12px; color:#eab308; margin-top:2px;">• ${p.nama_nasabah} (${formatRupiah(p.nominal)})</div>`;
         });
@@ -1106,23 +1188,23 @@
       document.getElementById('detailModal').style.display = 'flex';
     };
 
-    window.closeDetailModal = function() {
+    window.closeDetailModal = function () {
       document.getElementById('detailModal').style.display = 'none';
     };
 
-    document.getElementById('form-saldo-awal-master').addEventListener('submit', async function(e) {
+    document.getElementById('form-saldo-awal-master').addEventListener('submit', async function (e) {
       e.preventDefault();
-      if(activeRole !== 'master') return;
-      
+      if (activeRole !== 'master') return;
+
       const newAmt = cleanRupiahValue(document.getElementById('master-saldo-input').value);
       const { error } = await clientSupabase.from('konfigurasi_cabang').upsert({
-         id: 1,
+        id: 1,
         saldo_awal_bank: newAmt,
-         admin_ubah: activeName || activeAdmin,
+        admin_ubah: activeName || activeAdmin,
         updated_at: new Date().toISOString()
-     });
+      });
 
-      if(!error) {
+      if (!error) {
         alert('Saldo awal buku resmi berhasil diperbarui oleh Master!');
         await fetchDataAll();
       } else {
@@ -1130,7 +1212,7 @@
       }
     });
 
-    window.pemicuEditLaporan = function(id) {
+    window.pemicuEditLaporan = function (id) {
       const target = dataLaporan.find(i => i.id === id);
       if (!target) return;
       document.getElementById('edit-id-laporan').value = target.id;
@@ -1146,7 +1228,7 @@
       document.getElementById('page-input-laporan').scrollIntoView({ behavior: 'smooth' });
     };
 
-    window.hapusLaporanCabang = async function(id) {
+    window.hapusLaporanCabang = async function (id) {
       if (confirm('Apakah kamu yakin ingin menghapus data laporan harian ini?')) {
         const { error } = await clientSupabase.from('laporan_cabang').delete().eq('id', id);
         if (!error) {
@@ -1156,7 +1238,7 @@
       }
     };
 
-    window.pemicuEditPiutang = function(id) {
+    window.pemicuEditPiutang = function (id) {
       const target = dataPiutang.find(i => i.id === id);
       if (!target) return;
       document.getElementById('edit-id-piutang').value = target.id;
@@ -1169,7 +1251,7 @@
       document.getElementById('page-piutang').scrollIntoView({ behavior: 'smooth' });
     };
 
-    window.hapusPiutang = async function(id) {
+    window.hapusPiutang = async function (id) {
       if (confirm('Apakah kamu yakin ingin menghapus data piutang ini?')) {
         const { error } = await clientSupabase.from('piutang').delete().eq('id', id);
         if (!error) {
@@ -1179,7 +1261,7 @@
       }
     };
 
-    window.pemicuEditSetor = function(id) {
+    window.pemicuEditSetor = function (id) {
       const target = dataSetor.find(i => i.id === id);
       if (!target) return;
       document.getElementById('edit-id-setor').value = target.id;
@@ -1189,7 +1271,7 @@
       document.getElementById('page-setor-bank').scrollIntoView({ behavior: 'smooth' });
     };
 
-    window.hapusSetorBank = async function(id) {
+    window.hapusSetorBank = async function (id) {
       if (confirm('Apakah kamu yakin ingin menghapus data setoran bank ini?')) {
         const { error } = await clientSupabase.from('setor_bank_cabang').delete().eq('id', id);
         if (!error) {
@@ -1199,7 +1281,7 @@
       }
     };
 
-    document.getElementById('form-laporan-harian').addEventListener('submit', async function(e) {
+    document.getElementById('form-laporan-harian').addEventListener('submit', async function (e) {
       e.preventDefault();
       const idLaporan = document.getElementById('edit-id-laporan').value;
       const outCash = cleanRupiahValue(document.getElementById('lap-out-cash').value);
@@ -1253,7 +1335,7 @@
       }
     });
 
-    document.getElementById('form-piutang').addEventListener('submit', async function(e) {
+    document.getElementById('form-piutang').addEventListener('submit', async function (e) {
       e.preventDefault();
       const idPiutang = document.getElementById('edit-id-piutang').value;
       const btn = document.getElementById('btn-submit-piutang');
@@ -1290,7 +1372,7 @@
       }
     });
 
-    document.getElementById('form-setor-bank').addEventListener('submit', async function(e) {
+    document.getElementById('form-setor-bank').addEventListener('submit', async function (e) {
       e.preventDefault();
       const idSetor = document.getElementById('edit-id-setor').value;
       if (!idSetor && !confirm('Apakah uang tunai sudah benar-benar disetorkan secara fisik ke ATM / Bank?')) return;
@@ -1337,11 +1419,11 @@
       const last7Days = dataLaporan.slice(0, 7).reverse();
       last7Days.forEach(item => {
         labels.push(item.tanggal);
-        
+
         const pmsknRow = (item.cash_aktual || 0) + (item.transfer_aktual || 0);
         const pengeluaranRow = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
         const piutangRow = dataPiutang.filter(p => p.tanggal_piutang === item.tanggal).reduce((sum, p) => sum + (p.nominal || 0), 0);
-        
+
         datasetOmset.push(pmsknRow + pengeluaranRow + piutangRow);
         datasetOut.push(pengeluaranRow);
       });
@@ -1370,7 +1452,7 @@
     document.getElementById('search-laporan').addEventListener('input', renderLaporanTable);
     document.getElementById('search-piutang').addEventListener('input', renderPiutangTable);
 
-    window.addEventListener('click', function(e) {
+    window.addEventListener('click', function (e) {
       const modal = document.getElementById('detailModal');
       if (e.target === modal) closeDetailModal();
     });
@@ -1391,4 +1473,5 @@
     document.getElementById('setor-tanggal').value = tglStr;
   </script>
 </body>
+
 </html>
