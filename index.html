@@ -138,7 +138,6 @@
     const activeRole = localStorage.getItem('admin_role');
     const activeName = localStorage.getItem('admin_name');
 
-    // Mengunci akses halaman Hub agar hanya bisa dilewati Master dan Owner demi keamanan
     if (!activeAdmin || (activeRole !== 'master' && activeRole !== 'owner')) {
       window.location.href = 'login.html';
     }
@@ -182,6 +181,21 @@
         window.location.href = 'login.html';
       }
     });
+
+    let timeout;
+    function resetTimer() {
+      clearTimeout(timeout);
+      timeout = setTimeout(logoutUser, 3600000);
+    }
+    function logoutUser() {
+      localStorage.clear();
+      window.location.href = 'login.html';
+    }
+    window.onload = resetTimer;
+    document.onmousemove = resetTimer;
+    document.onkeydown = resetTimer;
+    document.onmousedown = resetTimer;
+    document.ontouchstart = resetTimer;
   </script>
 </body>
 

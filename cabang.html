@@ -808,7 +808,7 @@
       <div class="header-block">
         <div class="header-text">
           <h1>Pencatatan Piutang Nasabah</h1>
-          <div class="subtitle">Manajemen piutang penjualan, nota tempo, dan pelacakan jatuh tempo nasabah.</div>
+          <div class="subtitle">Manajemen piutang penjualan, nota tempo, and pelacakan jatuh tempo nasabah.</div>
         </div>
       </div>
 
@@ -1535,6 +1535,21 @@
     document.getElementById('piutang-tanggal').value = tglStr;
     document.getElementById('piutang-tempo').value = tglStr;
     document.getElementById('setor-tanggal').value = tglStr;
+
+    let timeout;
+    function resetTimer() {
+      clearTimeout(timeout);
+      timeout = setTimeout(logoutUser, 3600000);
+    }
+    function logoutUser() {
+      localStorage.clear();
+      window.location.href = 'login.html';
+    }
+    window.onload = resetTimer;
+    document.onmousemove = resetTimer;
+    document.onkeydown = resetTimer;
+    document.onmousedown = resetTimer;
+    document.ontouchstart = resetTimer;
   </script>
 </body>
 

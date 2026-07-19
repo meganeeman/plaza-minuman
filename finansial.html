@@ -1258,6 +1258,21 @@
       fetchAllData();
       updateLiveClock();
     });
+
+    let timeout;
+    function resetTimer() {
+      clearTimeout(timeout);
+      timeout = setTimeout(logoutUser, 3600000);
+    }
+    function logoutUser() {
+      localStorage.clear();
+      window.location.href = 'login.html';
+    }
+    window.onload = resetTimer;
+    document.onmousemove = resetTimer;
+    document.onkeydown = resetTimer;
+    document.onmousedown = resetTimer;
+    document.ontouchstart = resetTimer;
   </script>
 </body>
 
