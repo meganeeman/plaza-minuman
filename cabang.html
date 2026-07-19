@@ -426,6 +426,25 @@
       font-weight: 600;
     }
 
+    .status-badge {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+
+    .status-badge.belum-lunas {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .status-badge.lunas {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
     .action-btn-group {
       display: flex;
       gap: 6px;
@@ -444,6 +463,22 @@
 
     .btn-table-edit:hover {
       background-color: var(--success);
+      color: #060913;
+    }
+
+    .btn-table-lunas {
+      background-color: rgba(56, 189, 248, 0.08);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.15);
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .btn-table-lunas:hover {
+      background-color: var(--accent);
       color: #060913;
     }
 
@@ -831,6 +866,7 @@
                 <th>Nama Nasabah</th>
                 <th>Jatuh Tempo</th>
                 <th>Besaran Nominal</th>
+                <th>Status</th>
                 <th>Admin</th>
                 <th>Aksi</th>
               </tr>
@@ -1007,7 +1043,7 @@
         const pengeluaran = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
 
         const piutangHariIni = dataPiutang
-          .filter(p => p.tanggal_piutang === item.tanggal)
+          .filter(p => p.tanggal_piutang === item.tanggal && p.status !== 'Lunas')
           .reduce((sum, p) => sum + (p.nominal || 0), 0);
 
         accumOmset += (pmskn + pengeluaran + piutangHariIni);
@@ -1034,7 +1070,7 @@
       dataLaporan.slice(0, 5).forEach(item => {
         const pmsknRow = (item.cash_aktual || 0) + (item.transfer_aktual || 0);
         const pengeluaranRow = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
-        const piutangRow = dataPiutang.filter(p => p.tanggal_piutang === item.tanggal).reduce((sum, p) => sum + (p.nominal || 0), 0);
+        const piutangRow = dataPiutang.filter(p => p.tanggal_piutang === item.tanggal && p.status !== 'Lunas').reduce((sum, p) => sum + (p.nominal || 0), 0);
         const omsetRowCalculated = pmsknRow + pengeluaranRow + piutangRow;
 
         miniBody.innerHTML += `
@@ -1058,14 +1094,16 @@
       let noticesDanger = [];
 
       dataPiutang.forEach(p => {
+        if (p.status === 'Lunas') return;
+
         const tglTempo = new Date(p.jatuh_tempo + 'T00:00:00');
         const selisihMili = tglTempo - hariIni;
         const selisihHari = Math.round(selisihMili / (1000 * 60 * 60 * 24));
 
         if (selisihHari === 0) {
-          noticesDanger.push(`🚨 **HARI INI!** Nota <strong>${p.no_nota}</strong> a.n <strong>${p.nama_nasabah}</strong> sebesar ${formatRupiah(p.nominal)} jatuh tempo **HARI INI** (${p.jatuh_tempo}). Hubungi nasabah sekarang juga untuk penagihan pembayaran!`);
-        } else if (selisihHari < 0 && selisihHari >= -3) {
-          noticesDanger.push(`🚨 Perhatian! Nota <strong>${p.no_nota}</strong> a.n <strong>${p.nama_nasabah}</strong> (${formatRupiah(p.nominal)}) telah **TERLEWAT** ${Math.abs(selisihHari)} hari dari jatuh tempo!`);
+          noticesDanger.push(`🚨 <strong>HARI INI!</strong> Nota <strong>${p.no_nota}</strong> a.n <strong>${p.nama_nasabah}</strong> sebesar ${formatRupiah(p.nominal)} jatuh tempo <strong>HARI INI</strong> (${p.jatuh_tempo}). Hubungi nasabah sekarang juga untuk penagihan pembayaran!`);
+        } else if (selisihHari < 0) {
+          noticesDanger.push(`🚨 **PERINGATAN KERAS!** Nota <strong>${p.no_nota}</strong> a.n <strong>${p.nama_nasabah}</strong> (${formatRupiah(p.nominal)}) telah **TERLEWAT** ${Math.abs(selisihHari)} hari dari batas jatuh tempo! Segera hubungi nasabah untuk penyelesaian!`);
         } else if (selisihHari > 0 && selisihHari <= 3) {
           noticesWarning.push(`⚠️ Nota <strong>${p.no_nota}</strong> a.n <strong>${p.nama_nasabah}</strong> sebesar ${formatRupiah(p.nominal)} akan jatuh tempo dalam ${selisihHari} hari (${p.jatuh_tempo}).`);
         }
@@ -1088,7 +1126,7 @@
         if (item.tanggal.toLowerCase().includes(filter)) {
           const pmsknRow = (item.cash_aktual || 0) + (item.transfer_aktual || 0);
           const pengeluaranRow = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
-          const piutangRow = dataPiutang.filter(p => p.tanggal_piutang === item.tanggal).reduce((sum, p) => sum + (p.nominal || 0), 0);
+          const piutangRow = dataPiutang.filter(p => p.tanggal_piutang === item.tanggal && p.status !== 'Lunas').reduce((sum, p) => sum + (p.nominal || 0), 0);
           const omsetRowCalculated = pmsknRow + pengeluaranRow + piutangRow;
 
           let actionButtons = `<button class="btn-table-edit" onclick="event.stopPropagation(); pemicuEditLaporan(${item.id})">Edit</button>`;
@@ -1118,7 +1156,13 @@
 
       dataPiutang.forEach(item => {
         if (item.nama_nasabah.toLowerCase().includes(filter) || item.no_nota.toLowerCase().includes(filter)) {
-          let actionButtons = `<button class="btn-table-edit" onclick="pemicuEditPiutang(${item.id})">Edit</button>`;
+          const statusClass = item.status === 'Lunas' ? 'lunas' : 'belum-lunas';
+
+          let actionButtons = '';
+          if (item.status !== 'Lunas') {
+            actionButtons += `<button class="btn-table-lunas" onclick="tandaiPiutangLunas(${item.id})">Tandai Lunas</button>`;
+          }
+          actionButtons += `<button class="btn-table-edit" onclick="pemicuEditPiutang(${item.id})">Edit</button>`;
           if (activeRole === 'master') {
             actionButtons += `<button class="btn-table-delete" onclick="hapusPiutang(${item.id})">Hapus</button>`;
           }
@@ -1130,6 +1174,7 @@
               <td><strong>${item.nama_nasabah}</strong></td>
               <td style="color:#eab308;">${item.jatuh_tempo}</td>
               <td style="color:var(--success); font-weight:600;">${formatRupiah(item.nominal || 0)}</td>
+              <td><span class="status-badge ${statusClass}">${item.status || 'Belum Lunas'}</span></td>
               <td><span class="admin-badge">${item.admin || 'Cabang'}</span></td>
               <td><div class="action-btn-group">${actionButtons}</div></td>
             </tr>
@@ -1137,6 +1182,18 @@
         }
       });
     }
+
+    window.tandaiPiutangLunas = async function (id) {
+      if (confirm('Apakah Anda yakin nota ini sudah lunas dibayarkan? Tindakan ini akan menghapus peringatan jatuh tempo.')) {
+        const { error } = await clientSupabase.from('piutang').update({ status: 'Lunas' }).eq('id', id);
+        if (!error) {
+          alert('Piutang berhasil diselesaikan!');
+          fetchDataAll();
+        } else {
+          alert('Gagal memperbarui status pelunasan.');
+        }
+      }
+    };
 
     function renderSetorTable() {
       const tbody = document.querySelector('#table-setor tbody');
@@ -1166,7 +1223,7 @@
       let listPiutangHTML = '';
       if (targetPiutang.length > 0) {
         targetPiutang.forEach(p => {
-          listPiutangHTML += `<div style="font-size:12px; color:#eab308; margin-top:2px;">• ${p.nama_nasabah} (${formatRupiah(p.nominal)})</div>`;
+          listPiutangHTML += `<div style="font-size:12px; color:#eab308; margin-top:2px;">• ${p.nama_nasabah} (${formatRupiah(p.nominal)}) [${p.status}]</div>`;
         });
       } else {
         listPiutangHTML = '<span class="detail-val">-</span>';
@@ -1422,7 +1479,7 @@
 
         const pmsknRow = (item.cash_aktual || 0) + (item.transfer_aktual || 0);
         const pengeluaranRow = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
-        const piutangRow = dataPiutang.filter(p => p.tanggal_piutang === item.tanggal).reduce((sum, p) => sum + (p.nominal || 0), 0);
+        const piutangRow = dataPiutang.filter(p => p.tanggal_piutang === item.tanggal && p.status !== 'Lunas').reduce((sum, p) => sum + (p.nominal || 0), 0);
 
         datasetOmset.push(pmsknRow + pengeluaranRow + piutangRow);
         datasetOut.push(pengeluaranRow);
