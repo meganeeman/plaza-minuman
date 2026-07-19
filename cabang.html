@@ -271,6 +271,12 @@
       margin-bottom: 10px;
     }
 
+    .divider-line {
+      height: 1px;
+      background: var(--border);
+      margin: 25px 0;
+    }
+
     button[type="submit"] {
       background: var(--accent);
       color: var(--bg-primary);
@@ -528,7 +534,7 @@
 
       <div class="summary-grid">
         <div class="stat-card omset">
-          <h3>Total Omset Harian</h3>
+          <h3>Total Omset Hari Ini</h3>
           <div class="value" id="dash-omset">Rp 0</div>
         </div>
         <div class="stat-card pengeluaran">
@@ -560,8 +566,8 @@
               <thead>
                 <tr>
                   <th>Tanggal</th>
-                  <th>Omset</th>
-                  <th>Cash</th>
+                  <th>Omset Murni</th>
+                  <th>Cash Lapangan</th>
                 </tr>
               </thead>
               <tbody id="mini-log-body"></tbody>
@@ -575,45 +581,66 @@
       <div class="header-block">
         <div class="header-text">
           <h1>Pencatatan Laporan Harian</h1>
-          <div class="subtitle">Input penerimaan uang aktual harian serta dokumentasi pengeluaran dana operasional.</div>
+          <div class="subtitle">Input saldo awal toko, penerimaan penjualan murni harian serta perincian detail pengeluaran dana lapangan.</div>
         </div>
       </div>
 
       <div class="card">
         <form id="form-laporan-harian">
           <input type="hidden" id="edit-id-laporan">
-          <div class="form-group">
-            <label for="lap-tanggal">Tanggal Operasional</label>
-            <input type="date" id="lap-tanggal" onclick="this.showPicker()" required>
-          </div>
+          
           <div class="form-row">
             <div class="form-group">
-              <label for="lap-cash-aktual">Pemasukan Uang Cash Aktual (Rp)</label>
+              <label for="lap-tanggal">Tanggal Operasional</label>
+              <input type="date" id="lap-tanggal" onclick="this.showPicker()" required>
+            </div>
+            <div class="form-group">
+              <label for="lap-saldo-awal">Saldo Awal Uang Cash (Di luar Omset) (Rp)</label>
+              <input type="text" id="lap-saldo-awal" class="rupiah-mask" value="Rp 0" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="lap-cash-aktual">Pemasukan Penjualan Baru - Uang CASH (Rp)</label>
               <input type="text" id="lap-cash-aktual" class="rupiah-mask" value="Rp 0" required>
             </div>
             <div class="form-group">
-              <label for="lap-transfer-aktual">Pemasukan Via Transfer Bank (Rp)</label>
+              <label for="lap-transfer-aktual">Pemasukan Penjualan Baru - Via TRANSFER (Rp)</label>
               <input type="text" id="lap-transfer-aktual" class="rupiah-mask" value="Rp 0" required>
             </div>
           </div>
+
+          <div class="divider-line"></div>
+          <h3 style="font-size:14px; color:var(--danger); margin-bottom:15px;">Perincian Dana Pengeluaran Toko</h3>
+
           <div class="form-row">
             <div class="form-group">
-              <label for="lap-out-cash">Pengeluaran Harian - CASH (Rp)</label>
+              <label for="lap-out-cash">Nominal Pengeluaran via CASH (Rp)</label>
               <input type="text" id="lap-out-cash" class="rupiah-mask" value="Rp 0" required>
             </div>
             <div class="form-group">
-              <label for="lap-out-transfer">Pengeluaran Harian - TRANSFER BRI (Rp)</label>
-              <input type="text" id="lap-out-transfer" class="rupiah-mask" value="Rp 0" required>
+              <label for="lap-desc-cash">Keterangan Pengeluaran CASH (Wajib jika diisi)</label>
+              <input type="text" id="lap-desc-cash" placeholder="Contoh: 200k uang jalan supir kirim barang">
             </div>
           </div>
-          <div class="form-group">
-            <label for="lap-deskripsi">Deskripsi Detail Pengeluaran (Wajib jika ada pengeluaran)</label>
-            <input type="text" id="lap-deskripsi" placeholder="Contoh: Beli es batu kristal 5 kantong & token listrik toko">
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="lap-out-transfer">Nominal Pengeluaran via TRANSFER (Rp)</label>
+              <input type="text" id="lap-out-transfer" class="rupiah-mask" value="Rp 0" required>
+            </div>
+            <div class="form-group">
+              <label for="lap-desc-transfer">Keterangan Pengeluaran TRANSFER (Wajib jika diisi)</label>
+              <input type="text" id="lap-desc-transfer" placeholder="Contoh: Bayar token listrik via m-banking">
+            </div>
           </div>
+
           <div class="form-group">
             <label for="lap-nota">Tautan Bukti Dokumen / Nota Fisik (Opsional)</label>
             <input type="url" id="lap-nota" placeholder="https://drive.google.com/drive/folders/...">
           </div>
+          
           <button type="submit" id="btn-submit-laporan">Simpan Laporan Harian</button>
         </form>
       </div>
@@ -629,6 +656,7 @@
               <tr>
                 <th>Tanggal</th>
                 <th>Omset Otomatis</th>
+                <th>Saldo Awal</th>
                 <th>Cash Masuk</th>
                 <th>Trf Masuk</th>
                 <th>Total Out</th>
@@ -851,7 +879,7 @@
       let accumOutTrf = 0;
       let accumCashAktual = 0;
       let accumSetoran = 0;
-      let accumPiutang = 0;
+      let accumSaldoAwal = 0;
 
       dataLaporan.forEach(item => {
         const pmskn = (item.cash_aktual || 0) + (item.transfer_aktual || 0);
@@ -865,17 +893,14 @@
         accumOutCash += (item.pengeluaran_cash || 0);
         accumOutTrf += (item.pengeluaran_transfer || 0);
         accumCashAktual += (item.cash_aktual || 0);
-      });
-
-      dataPiutang.forEach(item => {
-        accumPiutang += (item.nominal || 0);
+        accumSaldoAwal += (item.saldo_awal_cash || 0);
       });
 
       dataSetor.forEach(item => {
         accumSetoran += (item.jumlah_setoran || 0);
       });
 
-      const sisaCashDiToko = accumCashAktual - accumOutCash - accumSetoran;
+      const sisaCashDiToko = accumSaldoAwal + accumCashAktual - accumOutCash - accumSetoran;
       const totalPengeluaran = accumOutCash + accumOutTrf;
       const saldoBRIKalkulasi = accumSetoran - accumOutTrf;
 
@@ -923,6 +948,7 @@
             <tr class="clickable-row" onclick="bukaDetailModal(${item.id})">
               <td>${item.tanggal}</td>
               <td style="color:var(--accent); font-weight:600;">${formatRupiah(omsetRowCalculated)}</td>
+              <td style="color:var(--text-muted);">${formatRupiah(item.saldo_awal_cash || 0)}</td>
               <td>${formatRupiah(item.cash_aktual || 0)}</td>
               <td>${formatRupiah(item.transfer_aktual || 0)}</td>
               <td style="color:var(--danger);">${formatRupiah(pengeluaranRow)}</td>
@@ -998,11 +1024,13 @@
       const body = document.getElementById('modal-details-body');
       body.innerHTML = `
         <div class="detail-item"><span class="detail-label">Tanggal Operasional</span><span class="detail-val">${target.tanggal}</span></div>
+        <div class="detail-item"><span class="detail-label">Saldo Awal Cash</span><span class="detail-val">${formatRupiah(target.saldo_awal_cash || 0)}</span></div>
         <div class="detail-item"><span class="detail-label">Pemasukan Uang Cash</span><span class="detail-val" style="color:var(--success);">${formatRupiah(target.cash_aktual || 0)}</span></div>
         <div class="detail-item"><span class="detail-label">Pemasukan Uang Transfer</span><span class="detail-val" style="color:var(--accent);">${formatRupiah(target.transfer_aktual || 0)}</span></div>
         <div class="detail-item"><span class="detail-label">Pengeluaran - CASH</span><span class="detail-val" style="color:var(--danger);">${formatRupiah(target.pengeluaran_cash || 0)}</span></div>
-        <div class="detail-item"><span class="detail-label">Pengeluaran - TRANSFER BRI</span><span class="detail-val" style="color:var(--danger);">${formatRupiah(target.pengeluaran_transfer || 0)}</span></div>
-        <div class="detail-item"><span class="detail-label">Deskripsi Pengeluaran</span><span class="detail-val">${target.deskripsi_pengeluaran || '-'}</span></div>
+        <div class="detail-item" style="flex-direction:column; align-items:flex-start;"><span class="detail-label">Ket Pengeluaran CASH</span><span class="detail-val" style="white-space:pre-wrap; margin-top:4px;">${target.deskripsi_pengeluaran_cash || '-'}</span></div>
+        <div class="detail-item"><span class="detail-label">Pengeluaran - TRANSFER</span><span class="detail-val" style="color:var(--danger);">${formatRupiah(target.pengeluaran_transfer || 0)}</span></div>
+        <div class="detail-item" style="flex-direction:column; align-items:flex-start;"><span class="detail-label">Ket Pengeluaran TRANSFER</span><span class="detail-val" style="white-space:pre-wrap; margin-top:4px;">${target.deskripsi_pengeluaran_transfer || '-'}</span></div>
         <div class="detail-item" style="flex-direction:column; align-items:flex-start;"><span class="detail-label">Rincian Piutang Terikat</span>${listPiutangHTML}</div>
         <div class="detail-item"><span class="detail-label">Dokumen Nota Fisik</span><span class="detail-val">${target.nota ? `<a href="${target.nota}" target="_blank" style="color:var(--accent); text-decoration:none;">Buka Tautan Lampiran</a>` : '-'}</span></div>
         <div class="detail-item"><span class="detail-label">Petugas Input</span><span class="detail-val"><span class="admin-badge">${target.admin || 'Cabang'}</span></span></div>
@@ -1019,11 +1047,13 @@
       if (!target) return;
       document.getElementById('edit-id-laporan').value = target.id;
       document.getElementById('lap-tanggal').value = target.tanggal;
+      document.getElementById('lap-saldo-awal').value = formatRupiah(target.saldo_awal_cash || 0);
       document.getElementById('lap-cash-aktual').value = formatRupiah(target.cash_aktual || 0);
       document.getElementById('lap-transfer-aktual').value = formatRupiah(target.transfer_aktual || 0);
       document.getElementById('lap-out-cash').value = formatRupiah(target.pengeluaran_cash || 0);
+      document.getElementById('lap-desc-cash').value = target.deskripsi_pengeluaran_cash || '';
       document.getElementById('lap-out-transfer').value = formatRupiah(target.pengeluaran_transfer || 0);
-      document.getElementById('lap-deskripsi').value = target.deskripsi_pengeluaran || '';
+      document.getElementById('lap-desc-transfer').value = target.deskripsi_pengeluaran_transfer || '';
       document.getElementById('lap-nota').value = target.nota || '';
       document.getElementById('btn-submit-laporan').innerText = "Perbarui Laporan Harian";
       document.getElementById('page-input-laporan').scrollIntoView({ behavior: 'smooth' });
@@ -1086,11 +1116,16 @@
       e.preventDefault();
       const idLaporan = document.getElementById('edit-id-laporan').value;
       const outCash = cleanRupiahValue(document.getElementById('lap-out-cash').value);
+      const descCash = document.getElementById('lap-desc-cash').value.trim();
       const outTrf = cleanRupiahValue(document.getElementById('lap-out-transfer').value);
-      const deskripsi = document.getElementById('lap-deskripsi').value.trim();
+      const descTrf = document.getElementById('lap-desc-transfer').value.trim();
 
-      if ((outCash > 0 || outTrf > 0) && deskripsi === '') {
-        alert('Gagal! Anda wajib mengisi Deskripsi Detail Pengeluaran jika terdapat nominal pengeluaran.');
+      if (outCash > 0 && descCash === '') {
+        alert('Gagal! Anda wajib mengisi Keterangan Pengeluaran CASH jika nominal pengeluaran cash diisi.');
+        return;
+      }
+      if (outTrf > 0 && descTrf === '') {
+        alert('Gagal! Anda wajib mengisi Keterangan Pengeluaran TRANSFER jika nominal pengeluaran transfer diisi.');
         return;
       }
 
@@ -1100,11 +1135,13 @@
 
       const paketData = {
         tanggal: document.getElementById('lap-tanggal').value,
+        saldo_awal_cash: cleanRupiahValue(document.getElementById('lap-saldo-awal').value),
         cash_aktual: cleanRupiahValue(document.getElementById('lap-cash-aktual').value),
         transfer_aktual: cleanRupiahValue(document.getElementById('lap-transfer-aktual').value),
         pengeluaran_cash: outCash,
+        deskripsi_pengeluaran_cash: descCash,
         pengeluaran_transfer: outTrf,
-        deskripsi_pengeluaran: deskripsi,
+        deskripsi_pengeluaran_transfer: descTrf,
         nota: document.getElementById('lap-nota').value,
         admin: activeName || activeAdmin
       };
@@ -1228,7 +1265,7 @@
         data: {
           labels: labels,
           datasets: [
-            { label: 'Omset Harian', data: datasetOmset, borderColor: '#38bdf8', borderWidth: 2, tension: 0.3 },
+            { label: 'Omset Hari Ini', data: datasetOmset, borderColor: '#38bdf8', borderWidth: 2, tension: 0.3 },
             { label: 'Pengeluaran', data: datasetOut, borderColor: '#ef4444', borderWidth: 2, tension: 0.3 }
           ]
         },
