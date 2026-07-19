@@ -247,7 +247,7 @@
       color: #94a3b8;
     }
 
-    .form-group input {
+    .form-group input, .form-group select {
       width: 100%;
       padding: 14px 16px;
       border: 1px solid var(--border);
@@ -258,7 +258,7 @@
       transition: all 0.2s;
     }
 
-    .form-group input:focus {
+    .form-group input:focus, .form-group select:focus {
       outline: none;
       border-color: var(--accent);
       box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
@@ -339,6 +339,15 @@
       font-size: 13px;
     }
 
+    tr.clickable-row {
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    tr.clickable-row:hover {
+      background-color: rgba(56, 189, 248, 0.03);
+    }
+
     tr:last-child td {
       border-bottom: none;
     }
@@ -399,6 +408,66 @@
       border-bottom: 1px solid var(--border);
     }
 
+    .custom-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(6, 9, 19, 0.8);
+      backdrop-filter: blur(8px);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background-color: #111827;
+      border: 1px solid var(--border);
+      width: 90%;
+      max-width: 500px;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
+      animation: modalReveal 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes modalReveal {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .modal-close:hover {
+      color: var(--text-main);
+    }
+
+    .detail-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.02);
+      font-size: 14px;
+    }
+
+    .detail-label { color: var(--text-muted); }
+    .detail-val { font-weight: 500; color: var(--text-main); }
+
     @media (max-width: 1024px) {
       .grid-dashboard-bottom {
         grid-template-columns: 1fr;
@@ -440,6 +509,7 @@
     <ul class="nav-menu">
       <li><a href="#" class="nav-link active-link" data-target="page-overview">Dashboard</a></li>
       <li><a href="#" class="nav-link" data-target="page-input-laporan">Input Laporan</a></li>
+      <li><a href="#" class="nav-link" data-target="page-piutang">Piutang Nasabah</a></li>
       <li><a href="#" class="nav-link" data-target="page-setor-bank">Setor Bank</a></li>
       <li id="logout-trigger-item"><a href="#" class="logout-btn" id="logout-trigger">Keluar</a></li>
     </ul>
@@ -505,7 +575,7 @@
       <div class="header-block">
         <div class="header-text">
           <h1>Pencatatan Laporan Harian</h1>
-          <div class="subtitle">Input penerimaan omset harian serta dokumentasi pengeluaran dana operasional.</div>
+          <div class="subtitle">Input penerimaan uang aktual harian serta dokumentasi pengeluaran dana operasional.</div>
         </div>
       </div>
 
@@ -518,12 +588,12 @@
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label for="lap-omset">Laporan Omset Harian (Rp)</label>
-              <input type="text" id="lap-omset" class="rupiah-mask" value="Rp 0" required>
+              <label for="lap-cash-aktual">Pemasukan Uang Cash Aktual (Rp)</label>
+              <input type="text" id="lap-cash-aktual" class="rupiah-mask" value="Rp 0" required>
             </div>
             <div class="form-group">
-              <label for="lap-cash">Cash Aktual Harian (Rp)</label>
-              <input type="text" id="lap-cash" class="rupiah-mask" value="Rp 0" required>
+              <label for="lap-transfer-aktual">Pemasukan Via Transfer Bank (Rp)</label>
+              <input type="text" id="lap-transfer-aktual" class="rupiah-mask" value="Rp 0" required>
             </div>
           </div>
           <div class="form-row">
@@ -550,7 +620,7 @@
 
       <div class="card">
         <div class="table-header-flex">
-          <h2>Log Riwayat Input Laporan</h2>
+          <h2>Log Riwayat Input Laporan <span style="font-size:11px; color:var(--accent); font-weight:normal; margin-left:8px;">*Klik baris untuk melihat detail</span></h2>
           <input type="text" id="search-laporan" class="search-input" placeholder="Cari tanggal...">
         </div>
         <div class="table-responsive">
@@ -558,12 +628,73 @@
             <thead>
               <tr>
                 <th>Tanggal</th>
-                <th>Omset</th>
-                <th>Cash Harian</th>
-                <th>Out Cash</th>
-                <th>Out Trf</th>
-                <th>Deskripsi</th>
-                <th>Nota</th>
+                <th>Omset Otomatis</th>
+                <th>Cash Masuk</th>
+                <th>Trf Masuk</th>
+                <th>Total Out</th>
+                <th>Admin</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="page-piutang" class="page-section">
+      <div class="header-block">
+        <div class="header-text">
+          <h1>Pencatatan Piutang Nasabah</h1>
+          <div class="subtitle">Manajemen piutang penjualan, nota tempo, dan pelacakan jatuh tempo nasabah.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <form id="form-piutang">
+          <input type="hidden" id="edit-id-piutang">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="piutang-tanggal">Tanggal Piutang</label>
+              <input type="date" id="piutang-tanggal" onclick="this.showPicker()" required>
+            </div>
+            <div class="form-group">
+              <label for="piutang-nota">Nomor Nota</label>
+              <input type="text" id="piutang-nota" placeholder="Contoh: INV/2026/001" required>
+            </div>
+            <div class="form-group">
+              <label for="piutang-tempo">Tanggal Jatuh Tempo</label>
+              <input type="date" id="piutang-tempo" onclick="this.showPicker()" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="piutang-nasabah">Nama Nasabah</label>
+              <input type="text" id="piutang-nasabah" placeholder="Masukkan nama lengkap nasabah" required>
+            </div>
+            <div class="form-group">
+              <label for="piutang-nominal">Besaran Piutang (Rp)</label>
+              <input type="text" id="piutang-nominal" class="rupiah-mask" value="Rp 0" required>
+            </div>
+          </div>
+          <button type="submit" id="btn-submit-piutang">Simpan Data Piutang</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="table-header-flex">
+          <h2>Log Riwayat Piutang Aktif</h2>
+          <input type="text" id="search-piutang" class="search-input" placeholder="Cari nasabah/nota...">
+        </div>
+        <div class="table-responsive">
+          <table id="table-piutang">
+            <thead>
+              <tr>
+                <th>Tgl Piutang</th>
+                <th>No. Nota</th>
+                <th>Nama Nasabah</th>
+                <th>Jatuh Tempo</th>
+                <th>Besaran Nominal</th>
                 <th>Admin</th>
                 <th>Aksi</th>
               </tr>
@@ -619,6 +750,16 @@
 
   </div>
 
+  <div id="detailModal" class="custom-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 style="margin-bottom:0; font-size:16px; color:var(--accent);">Rincian Detail Transaksi</h2>
+        <button class="modal-close" onclick="closeDetailModal()">&times;</button>
+      </div>
+      <div id="modal-details-body"></div>
+    </div>
+  </div>
+
   <script>
     const SUPABASE_URL = "https://vccwscybnhpatjioixfx.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_blMwzDZ5pM1TciQzhsg8UQ_cCB_ixOQ";
@@ -659,6 +800,7 @@
 
     let dataLaporan = [];
     let dataSetor = [];
+    let dataPiutang = [];
     let cChart = null;
 
     const formatRupiah = (angka) => 'Rp ' + parseInt(angka).toLocaleString('id-ID');
@@ -687,12 +829,15 @@
       try {
         const resLap = await clientSupabase.from('laporan_cabang').select('*').order('tanggal', { ascending: false });
         const resSetor = await clientSupabase.from('setor_bank_cabang').select('*').order('tanggal_setor', { ascending: false });
+        const resPiutang = await clientSupabase.from('piutang').select('*').order('tanggal_piutang', { ascending: false });
         
         if (!resLap.error) dataLaporan = resLap.data || [];
         if (!resSetor.error) dataSetor = resSetor.data || [];
+        if (!resPiutang.error) dataPiutang = resPiutang.data || [];
 
         processCalculations();
         renderLaporanTable();
+        renderPiutangTable();
         renderSetorTable();
         initChartTren();
       } catch (err) {
@@ -706,12 +851,24 @@
       let accumOutTrf = 0;
       let accumCashAktual = 0;
       let accumSetoran = 0;
+      let accumPiutang = 0;
 
       dataLaporan.forEach(item => {
-        accumOmset += (item.omset || 0);
+        const pmskn = (item.cash_aktual || 0) + (item.transfer_aktual || 0);
+        const pengeluaran = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
+        
+        const piutangHariIni = dataPiutang
+          .filter(p => p.tanggal_piutang === item.tanggal)
+          .reduce((sum, p) => sum + (p.nominal || 0), 0);
+
+        accumOmset += (pmskn + pengeluaran + piutangHariIni);
         accumOutCash += (item.pengeluaran_cash || 0);
         accumOutTrf += (item.pengeluaran_transfer || 0);
         accumCashAktual += (item.cash_aktual || 0);
+      });
+
+      dataPiutang.forEach(item => {
+        accumPiutang += (item.nominal || 0);
       });
 
       dataSetor.forEach(item => {
@@ -730,10 +887,15 @@
       const miniBody = document.getElementById('mini-log-body');
       miniBody.innerHTML = '';
       dataLaporan.slice(0, 5).forEach(item => {
+        const pmsknRow = (item.cash_aktual || 0) + (item.transfer_aktual || 0);
+        const pengeluaranRow = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
+        const piutangRow = dataPiutang.filter(p => p.tanggal_piutang === item.tanggal).reduce((sum, p) => sum + (p.nominal || 0), 0);
+        const omsetRowCalculated = pmsknRow + pengeluaranRow + piutangRow;
+
         miniBody.innerHTML += `
           <tr>
             <td><strong>${item.tanggal}</strong></td>
-            <td style="color:var(--accent)">${formatRupiah(item.omset || 0)}</td>
+            <td style="color:var(--accent)">${formatRupiah(omsetRowCalculated)}</td>
             <td style="color:var(--success)">${formatRupiah(item.cash_aktual || 0)}</td>
           </tr>
         `;
@@ -747,22 +909,50 @@
 
       dataLaporan.forEach(item => {
         if (item.tanggal.toLowerCase().includes(filter)) {
-          const link = item.nota ? `<a href="${item.nota}" target="_blank" style="color:var(--accent); text-decoration:none;">Lihat Nota</a>` : '-';
-          
-          let actionButtons = `<button class="btn-table-edit" onclick="pemicuEditLaporan(${item.id})">Edit</button>`;
+          const pmsknRow = (item.cash_aktual || 0) + (item.transfer_aktual || 0);
+          const pengeluaranRow = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
+          const piutangRow = dataPiutang.filter(p => p.tanggal_piutang === item.tanggal).reduce((sum, p) => sum + (p.nominal || 0), 0);
+          const omsetRowCalculated = pmsknRow + pengeluaranRow + piutangRow;
+
+          let actionButtons = `<button class="btn-table-edit" onclick="event.stopPropagation(); pemicuEditLaporan(${item.id})">Edit</button>`;
           if (activeRole === 'master') {
-            actionButtons += `<button class="btn-table-delete" onclick="hapusLaporanCabang(${item.id})">Hapus</button>`;
+            actionButtons += `<button class="btn-table-delete" onclick="event.stopPropagation(); hapusLaporanCabang(${item.id})">Hapus</button>`;
+          }
+
+          tbody.innerHTML += `
+            <tr class="clickable-row" onclick="bukaDetailModal(${item.id})">
+              <td>${item.tanggal}</td>
+              <td style="color:var(--accent); font-weight:600;">${formatRupiah(omsetRowCalculated)}</td>
+              <td>${formatRupiah(item.cash_aktual || 0)}</td>
+              <td>${formatRupiah(item.transfer_aktual || 0)}</td>
+              <td style="color:var(--danger);">${formatRupiah(pengeluaranRow)}</td>
+              <td><span class="admin-badge">${item.admin || 'Cabang'}</span></td>
+              <td><div class="action-btn-group">${actionButtons}</div></td>
+            </tr>
+          `;
+        }
+      });
+    }
+
+    function renderPiutangTable() {
+      const filter = document.getElementById('search-piutang').value.toLowerCase();
+      const tbody = document.querySelector('#table-piutang tbody');
+      tbody.innerHTML = '';
+
+      dataPiutang.forEach(item => {
+        if (item.nama_nasabah.toLowerCase().includes(filter) || item.no_nota.toLowerCase().includes(filter)) {
+          let actionButtons = `<button class="btn-table-edit" onclick="pemicuEditPiutang(${item.id})">Edit</button>`;
+          if (activeRole === 'master') {
+            actionButtons += `<button class="btn-table-delete" onclick="hapusPiutang(${item.id})">Hapus</button>`;
           }
 
           tbody.innerHTML += `
             <tr>
-              <td>${item.tanggal}</td>
-              <td>${formatRupiah(item.omset || 0)}</td>
-              <td>${formatRupiah(item.cash_aktual || 0)}</td>
-              <td>${formatRupiah(item.pengeluaran_cash || 0)}</td>
-              <td>${formatRupiah(item.pengeluaran_transfer || 0)}</td>
-              <td>${item.deskripsi_pengeluaran || '-'}</td>
-              <td>${link}</td>
+              <td>${item.tanggal_piutang}</td>
+              <td>${item.no_nota}</td>
+              <td><strong>${item.nama_nasabah}</strong></td>
+              <td style="color:#eab308;">${item.jatuh_tempo}</td>
+              <td style="color:var(--success); font-weight:600;">${formatRupiah(item.nominal || 0)}</td>
               <td><span class="admin-badge">${item.admin || 'Cabang'}</span></td>
               <td><div class="action-btn-group">${actionButtons}</div></td>
             </tr>
@@ -791,13 +981,46 @@
       });
     }
 
+    window.bukaDetailModal = function(id) {
+      const target = dataLaporan.find(i => i.id === id);
+      if (!target) return;
+      
+      const targetPiutang = dataPiutang.filter(p => p.tanggal_piutang === target.tanggal);
+      let listPiutangHTML = '';
+      if(targetPiutang.length > 0) {
+        targetPiutang.forEach(p => {
+          listPiutangHTML += `<div style="font-size:12px; color:#eab308; margin-top:2px;">• ${p.nama_nasabah} (${formatRupiah(p.nominal)})</div>`;
+        });
+      } else {
+        listPiutangHTML = '<span class="detail-val">-</span>';
+      }
+
+      const body = document.getElementById('modal-details-body');
+      body.innerHTML = `
+        <div class="detail-item"><span class="detail-label">Tanggal Operasional</span><span class="detail-val">${target.tanggal}</span></div>
+        <div class="detail-item"><span class="detail-label">Pemasukan Uang Cash</span><span class="detail-val" style="color:var(--success);">${formatRupiah(target.cash_aktual || 0)}</span></div>
+        <div class="detail-item"><span class="detail-label">Pemasukan Uang Transfer</span><span class="detail-val" style="color:var(--accent);">${formatRupiah(target.transfer_aktual || 0)}</span></div>
+        <div class="detail-item"><span class="detail-label">Pengeluaran - CASH</span><span class="detail-val" style="color:var(--danger);">${formatRupiah(target.pengeluaran_cash || 0)}</span></div>
+        <div class="detail-item"><span class="detail-label">Pengeluaran - TRANSFER BRI</span><span class="detail-val" style="color:var(--danger);">${formatRupiah(target.pengeluaran_transfer || 0)}</span></div>
+        <div class="detail-item"><span class="detail-label">Deskripsi Pengeluaran</span><span class="detail-val">${target.deskripsi_pengeluaran || '-'}</span></div>
+        <div class="detail-item" style="flex-direction:column; align-items:flex-start;"><span class="detail-label">Rincian Piutang Terikat</span>${listPiutangHTML}</div>
+        <div class="detail-item"><span class="detail-label">Dokumen Nota Fisik</span><span class="detail-val">${target.nota ? `<a href="${target.nota}" target="_blank" style="color:var(--accent); text-decoration:none;">Buka Tautan Lampiran</a>` : '-'}</span></div>
+        <div class="detail-item"><span class="detail-label">Petugas Input</span><span class="detail-val"><span class="admin-badge">${target.admin || 'Cabang'}</span></span></div>
+      `;
+      document.getElementById('detailModal').style.display = 'flex';
+    };
+
+    window.closeDetailModal = function() {
+      document.getElementById('detailModal').style.display = 'none';
+    };
+
     window.pemicuEditLaporan = function(id) {
       const target = dataLaporan.find(i => i.id === id);
       if (!target) return;
       document.getElementById('edit-id-laporan').value = target.id;
       document.getElementById('lap-tanggal').value = target.tanggal;
-      document.getElementById('lap-omset').value = formatRupiah(target.omset || 0);
-      document.getElementById('lap-cash').value = formatRupiah(target.cash_aktual || 0);
+      document.getElementById('lap-cash-aktual').value = formatRupiah(target.cash_aktual || 0);
+      document.getElementById('lap-transfer-aktual').value = formatRupiah(target.transfer_aktual || 0);
       document.getElementById('lap-out-cash').value = formatRupiah(target.pengeluaran_cash || 0);
       document.getElementById('lap-out-transfer').value = formatRupiah(target.pengeluaran_transfer || 0);
       document.getElementById('lap-deskripsi').value = target.deskripsi_pengeluaran || '';
@@ -812,6 +1035,29 @@
         if (!error) {
           fetchDataAll();
           alert('Data laporan berhasil dihapus!');
+        }
+      }
+    };
+
+    window.pemicuEditPiutang = function(id) {
+      const target = dataPiutang.find(i => i.id === id);
+      if (!target) return;
+      document.getElementById('edit-id-piutang').value = target.id;
+      document.getElementById('piutang-tanggal').value = target.tanggal_piutang;
+      document.getElementById('piutang-nota').value = target.no_nota;
+      document.getElementById('piutang-tempo').value = target.jatuh_tempo;
+      document.getElementById('piutang-nasabah').value = target.nama_nasabah;
+      document.getElementById('piutang-nominal').value = formatRupiah(target.nominal || 0);
+      document.getElementById('btn-submit-piutang').innerText = "Perbarui Data Piutang";
+      document.getElementById('page-piutang').scrollIntoView({ behavior: 'smooth' });
+    };
+
+    window.hapusPiutang = async function(id) {
+      if (confirm('Apakah kamu yakin ingin menghapus data piutang ini?')) {
+        const { error } = await clientSupabase.from('piutang').delete().eq('id', id);
+        if (!error) {
+          fetchDataAll();
+          alert('Data piutang berhasil dihapus!');
         }
       }
     };
@@ -836,44 +1082,6 @@
       }
     };
 
-    function initChartTren() {
-      const ctx = document.getElementById('cabangChart').getContext('2d');
-      if (cChart) cChart.destroy();
-
-      let labels = [];
-      let datasetOmset = [];
-      let datasetOut = [];
-
-      const last7Days = dataLaporan.slice(0, 7).reverse();
-      last7Days.forEach(item => {
-        labels.push(item.tanggal);
-        datasetOmset.push(item.omset || 0);
-        datasetOut.push((item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0));
-      });
-
-      cChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [
-            { label: 'Omset Harian', data: datasetOmset, borderColor: '#38bdf8', borderWidth: 2, tension: 0.3 },
-            { label: 'Pengeluaran', data: datasetOut, borderColor: '#ef4444', borderWidth: 2, tension: 0.3 }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
-            y: { grid: { color: 'rgba(255,255,255,0.02)' }, ticks: { color: '#94a3b8' } }
-          },
-          plugins: { legend: { labels: { color: '#94a3b8' } } }
-        }
-      });
-    }
-
-    document.getElementById('search-laporan').addEventListener('input', renderLaporanTable);
-
     document.getElementById('form-laporan-harian').addEventListener('submit', async function(e) {
       e.preventDefault();
       const idLaporan = document.getElementById('edit-id-laporan').value;
@@ -892,8 +1100,8 @@
 
       const paketData = {
         tanggal: document.getElementById('lap-tanggal').value,
-        omset: cleanRupiahValue(document.getElementById('lap-omset').value),
-        cash_aktual: cleanRupiahValue(document.getElementById('lap-cash').value),
+        cash_aktual: cleanRupiahValue(document.getElementById('lap-cash-aktual').value),
+        transfer_aktual: cleanRupiahValue(document.getElementById('lap-transfer-aktual').value),
         pengeluaran_cash: outCash,
         pengeluaran_transfer: outTrf,
         deskripsi_pengeluaran: deskripsi,
@@ -919,6 +1127,43 @@
         alert('Laporan harian berhasil disimpan!');
       } else {
         alert('Gagal memproses data laporan ke cloud!');
+      }
+    });
+
+    document.getElementById('form-piutang').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const idPiutang = document.getElementById('edit-id-piutang').value;
+      const btn = document.getElementById('btn-submit-piutang');
+      btn.disabled = true;
+      btn.innerText = "Memproses...";
+
+      const paketData = {
+        tanggal_piutang: document.getElementById('piutang-tanggal').value,
+        no_nota: document.getElementById('piutang-nota').value.trim(),
+        jatuh_tempo: document.getElementById('piutang-tempo').value,
+        nama_nasabah: document.getElementById('piutang-nasabah').value.trim(),
+        nominal: cleanRupiahValue(document.getElementById('piutang-nominal').value),
+        admin: activeName || activeAdmin
+      };
+
+      let hasil;
+      if (idPiutang) {
+        hasil = await clientSupabase.from('piutang').update(paketData).eq('id', idPiutang);
+      } else {
+        hasil = await clientSupabase.from('piutang').insert([paketData]);
+      }
+
+      btn.disabled = false;
+      btn.innerText = "Simpan Data Piutang";
+
+      if (!hasil.error) {
+        this.reset();
+        document.getElementById('edit-id-piutang').value = '';
+        document.querySelectorAll('.rupiah-mask').forEach(i => i.value = 'Rp 0');
+        fetchDataAll();
+        alert('Data piutang nasabah berhasil disimpan!');
+      } else {
+        alert('Gagal memproses data piutang ke cloud!');
       }
     });
 
@@ -954,8 +1199,57 @@
         fetchDataAll();
         alert('Data setoran bank berhasil diproses!');
       } else {
-        alert('Gagal merekam data setoran bank!');
+        alert('Gagal rekam data setoran bank!');
       }
+    });
+
+    function initChartTren() {
+      const ctx = document.getElementById('cabangChart').getContext('2d');
+      if (cChart) cChart.destroy();
+
+      let labels = [];
+      let datasetOmset = [];
+      let datasetOut = [];
+
+      const last7Days = dataLaporan.slice(0, 7).reverse();
+      last7Days.forEach(item => {
+        labels.push(item.tanggal);
+        
+        const pmsknRow = (item.cash_aktual || 0) + (item.transfer_aktual || 0);
+        const pengeluaranRow = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
+        const piutangRow = dataPiutang.filter(p => p.tanggal_piutang === item.tanggal).reduce((sum, p) => sum + (p.nominal || 0), 0);
+        
+        datasetOmset.push(pmsknRow + pengeluaranRow + piutangRow);
+        datasetOut.push(pengeluaranRow);
+      });
+
+      cChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            { label: 'Omset Harian', data: datasetOmset, borderColor: '#38bdf8', borderWidth: 2, tension: 0.3 },
+            { label: 'Pengeluaran', data: datasetOut, borderColor: '#ef4444', borderWidth: 2, tension: 0.3 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+            y: { grid: { color: 'rgba(255,255,255,0.02)' }, ticks: { color: '#94a3b8' } }
+          },
+          plugins: { legend: { labels: { color: '#94a3b8' } } }
+        }
+      });
+    }
+
+    document.getElementById('search-laporan').addEventListener('input', renderLaporanTable);
+    document.getElementById('search-piutang').addEventListener('input', renderPiutangTable);
+
+    window.addEventListener('click', function(e) {
+      const modal = document.getElementById('detailModal');
+      if (e.target === modal) closeDetailModal();
     });
 
     function startClock() {
@@ -969,6 +1263,8 @@
     startClock();
     const tglStr = new Date().toISOString().split('T')[0];
     document.getElementById('lap-tanggal').value = tglStr;
+    document.getElementById('piutang-tanggal').value = tglStr;
+    document.getElementById('piutang-tempo').value = tglStr;
     document.getElementById('setor-tanggal').value = tglStr;
   </script>
 </body>
