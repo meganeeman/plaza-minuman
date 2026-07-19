@@ -892,7 +892,7 @@
       try {
         const { data: configData } = await clientSupabase.from('konfigurasi_cabang').select('saldo_awal_bank').eq('id', 1).single();
         if (configData) {
-          saldoAwalBankGlobal = configData.saldo_awal_bank || 0;
+          saldoAwalBankGlobal = parseFloat(configData.saldo_awal_bank) || 0;
           document.getElementById('master-saldo-input').value = formatRupiah(saldoAwalBankGlobal);
         }
 
@@ -1123,7 +1123,7 @@
 
       if(!error) {
         alert('Saldo awal buku resmi berhasil diperbarui oleh Master!');
-        fetchDataAll();
+        await fetchDataAll();
       } else {
         alert('Gagal memperbarui saldo konfigurasi pusat!');
       }
