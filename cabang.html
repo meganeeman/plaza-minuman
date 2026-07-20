@@ -1237,28 +1237,33 @@
       let accumAngsuranTrf = 0;
 
       dataLaporan.forEach(item => {
-        const outRow = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
-        accumOmset += ((item.cash_aktual || 0) + (item.transfer_aktual || 0) + outRow);
+        const cashMasuk = parseFloat(item.cash_aktual) || 0;
+        const transferMasuk = parseFloat(item.transfer_aktual) || 0;
+        const outCash = parseFloat(item.pengeluaran_cash) || 0;
+        const outTrf = parseFloat(item.pengeluaran_transfer) || 0;
+        const totalOutRow = outCash + outTrf;
 
-        accumOutCash += (item.pengeluaran_cash || 0);
-        accumOutTrf += (item.pengeluaran_transfer || 0);
-        accumCashAktual += (item.cash_aktual || 0);
-        accumTransferAktual += (item.transfer_aktual || 0);
-      });
+        const piutangHariIni = dataPiutang
+          .filter(p => p.tanggal_piutang === item.tanggal)
+          .reduce((sum, p) => sum + (parseFloat(p.nominal) || 0), 0);
 
-      dataPiutang.forEach(item => {
-        accumOmset += (item.nominal || 0);
+        accumOmset += (cashMasuk + transferMasuk + totalOutRow + piutangHariIni);
+        accumOutCash += outCash;
+        accumOutTrf += outTrf;
+        accumCashAktual += cashMasuk;
+        accumTransferAktual += transferMasuk;
       });
 
       dataSetor.forEach(item => {
-        accumSetoran += (item.jumlah_setoran || 0);
+        accumSetoran += (parseFloat(item.jumlah_setoran) || 0);
       });
 
       dataAngsuran.forEach(item => {
+        const nominalAngsuran = parseFloat(item.nominal) || 0;
         if (item.metode === 'CASH') {
-          accumAngsuranCash += (item.nominal || 0);
+          accumAngsuranCash += nominalAngsuran;
         } else if (item.metode === 'TRANSFER') {
-          accumAngsuranTrf += (item.nominal || 0);
+          accumAngsuranTrf += nominalAngsuran;
         }
       });
 
@@ -1279,14 +1284,14 @@
         if (!groupedRows[item.tanggal]) {
           groupedRows[item.tanggal] = { cash: 0, trf: 0, out: 0 };
         }
-        groupedRows[item.tanggal].cash += (item.cash_aktual || 0);
-        groupedRows[item.tanggal].trf += (item.transfer_aktual || 0);
-        groupedRows[item.tanggal].out += ((item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0));
+        groupedRows[item.tanggal].cash += (parseFloat(item.cash_aktual) || 0);
+        groupedRows[item.tanggal].trf += (parseFloat(item.transfer_aktual) || 0);
+        groupedRows[item.tanggal].out += ((parseFloat(item.pengeluaran_cash) || 0) + (parseFloat(item.pengeluaran_transfer) || 0));
       });
 
       Object.keys(groupedRows).sort().reverse().slice(0, 5).forEach(tgl => {
         const row = groupedRows[tgl];
-        const piutangRow = dataPiutang.filter(p => p.tanggal_piutang === tgl).reduce((sum, p) => sum + (p.nominal || 0), 0);
+        const piutangRow = dataPiutang.filter(p => p.tanggal_piutang === tgl).reduce((sum, p) => sum + (parseFloat(p.nominal) || 0), 0);
         const omsetRowCalculated = row.cash + row.trf + row.out + piutangRow;
 
         miniBody.innerHTML += `
