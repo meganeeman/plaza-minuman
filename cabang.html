@@ -1228,11 +1228,17 @@
         const pmskn = (item.cash_aktual || 0) + (item.transfer_aktual || 0);
         const pengeluaran = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
 
-        const piutangHariIni = dataPiutang
-          .filter(p => p.tanggal_piutang === item.tanggal && p.status !== 'Lunas')
-          .reduce((sum, p) => sum + (p.nominal || 0), 0);
+        const isPelunasan = (item.deskripsi_pengeluaran_cash && (item.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'))) ||
+          (item.deskripsi_pengeluaran_transfer && (item.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang')));
 
-        accumOmset += (pmskn + pengeluaran + piutangHariIni);
+        if (!isPelunasan) {
+          const piutangHariIni = dataPiutang
+            .filter(p => p.tanggal_piutang === item.tanggal)
+            .reduce((sum, p) => sum + (p.nominal || 0), 0);
+
+          accumOmset += (pmskn + pengeluaran + piutangHariIni);
+        }
+
         accumOutCash += (item.pengeluaran_cash || 0);
         accumOutTrf += (item.pengeluaran_transfer || 0);
         accumCashAktual += (item.cash_aktual || 0);
@@ -1254,17 +1260,50 @@
 
       const miniBody = document.getElementById('mini-log-body');
       miniBody.innerHTML = '';
-      dataLaporan.slice(0, 5).forEach(item => {
-        const pmsknRow = (item.cash_aktual || 0) + (item.transfer_aktual || 0);
-        const pengeluaranRow = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
-        const piutangRow = dataPiutang.filter(p => p.tanggal_piutang === item.tanggal && p.status !== 'Lunas').reduce((sum, p) => sum + (p.nominal || 0), 0);
-        const omsetRowCalculated = pmsknRow + pengeluaranRow + piutangRow;
+
+      const groupedRows = {};
+      dataLaporan.forEach(item => {
+        if (!groupedRows[item.tanggal]) {
+          groupedRows[item.tanggal] = { cash_masuk: 0, transfer_masuk: 0, out_cash: 0, out_trf: 0, has_pelunasan: false };
+        }
+
+        const checkPelunasan = (item.deskripsi_pengeluaran_cash && (item.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'))) ||
+          (item.deskripsi_pengeluaran_transfer && (item.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang')));
+
+        if (checkPelunasan) {
+          groupedRows[item.tanggal].has_pelunasan = true;
+        }
+
+        groupedRows[item.tanggal].cash_masuk += (item.cash_aktual || 0);
+        groupedRows[item.tanggal].transfer_masuk += (item.transfer_aktual || 0);
+        groupedRows[item.tanggal].out_cash += (item.pengeluaran_cash || 0);
+        groupedRows[item.tanggal].out_trf += (item.pengeluaran_transfer || 0);
+      });
+
+      Object.keys(groupedRows).sort().reverse().slice(0, 5).forEach(tgl => {
+        const row = groupedRows[tgl];
+        const pmsknRow = row.cash_masuk + row.transfer_masuk;
+        const pengeluaranRow = row.out_cash + row.out_trf;
+        const piutangRow = dataPiutang.filter(p => p.tanggal_piutang === tgl).reduce((sum, p) => sum + (p.nominal || 0), 0);
+
+        let omsetRowCalculated = pmsknRow + pengeluaranRow + piutangRow;
+        if (row.has_pelunasan) {
+          const rawPmsknNonPelunasan = dataLaporan
+            .filter(item => item.tanggal === tgl && !((item.deskripsi_pengeluaran_cash && (item.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'))) || (item.deskripsi_pengeluaran_transfer && (item.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang')))))
+            .reduce((sum, item) => sum + (item.cash_aktual || 0) + (item.transfer_aktual || 0), 0);
+
+          const rawOutNonPelunasan = dataLaporan
+            .filter(item => item.tanggal === tgl && !((item.deskripsi_pengeluaran_cash && (item.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'))) || (item.deskripsi_pengeluaran_transfer && (item.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang')))))
+            .reduce((sum, item) => sum + (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0), 0);
+
+          omsetRowCalculated = rawPmsknNonPelunasan + rawOutNonPelunasan + piutangRow;
+        }
 
         miniBody.innerHTML += `
           <tr>
-            <td><strong>${item.tanggal}</strong></td>
+            <td><strong>${tgl}</strong></td>
             <td style="color:var(--accent)">${formatRupiah(omsetRowCalculated)}</td>
-            <td style="color:var(--success)">${formatRupiah(item.cash_aktual || 0)}</td>
+            <td style="color:var(--success)">${formatRupiah(row.cash_masuk)}</td>
           </tr>
         `;
       });
@@ -1284,15 +1323,16 @@
         if (p.status === 'Lunas') return;
 
         const tglTempo = new Date(p.jatuh_tempo + 'T00:00:00');
+        const dateFormatted = tglTempo.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         const selisihMili = tglTempo - hariIni;
         const selisihHari = Math.round(selisihMili / (1000 * 60 * 60 * 24));
 
         if (selisihHari === 0) {
-          noticesDanger.push(`🚨 <strong>HARI INI!</strong> Nota <strong>${p.no_nota}</strong> a.n <strong>${p.nama_nasabah}</strong> jatuh tempo <strong>HARI INI</strong> (${p.jatuh_tempo}).`);
+          noticesDanger.push(`🚨 <strong>HARI INI!</strong> Nota <strong>${p.no_nota}</strong> a.n <strong>${p.nama_nasabah}</strong> jatuh tempo <strong>HARI INI</strong> (${dateFormatted}).`);
         } else if (selisihHari < 0) {
-          noticesDanger.push(`🚨 <strong>PERINGATAN!</strong> Nota <strong>${p.no_nota}</strong> a.n <strong>${p.nama_nasabah}</strong> telah <strong>TERLEWAT</strong> ${Math.abs(selisihHari)} hari.`);
+          noticesDanger.push(`🚨 <strong>PERINGATAN!</strong> Nota <strong>${p.no_nota}</strong> a.n <strong>${p.nama_nasabah}</strong> telah <strong>TERLEWAT</strong> ${Math.abs(selisihHari)} hari dari jadwal (${dateFormatted}).`);
         } else if (selisihHari > 0 && selisihHari <= 3) {
-          noticesWarning.push(`⚠️ Nota <strong>${p.no_nota}</strong> a.n <strong>${p.nama_nasabah}</strong> jatuh tempo dalam ${selisihHari} hari (${p.jatuh_tempo}).`);
+          noticesWarning.push(`⚠️ Nota <strong>${p.no_nota}</strong> a.n <strong>${p.nama_nasabah}</strong> jatuh tempo dalam ${selisihHari} hari (${dateFormatted}).`);
         }
       });
 
@@ -1313,8 +1353,18 @@
         if (!filter || item.tanggal === filter) {
           const pmsknRow = (item.cash_aktual || 0) + (item.transfer_aktual || 0);
           const pengeluaranRow = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
-          const piutangRow = dataPiutang.filter(p => p.tanggal_piutang === item.tanggal && p.status !== 'Lunas').reduce((sum, p) => sum + (p.nominal || 0), 0);
-          const omsetRowCalculated = pmsknRow + pengeluaranRow + piutangRow;
+
+          const piutangRow = dataPiutang
+            .filter(p => p.tanggal_piutang === item.tanggal)
+            .reduce((sum, p) => sum + (p.nominal || 0), 0);
+
+          const checkPelunasan = (item.deskripsi_pengeluaran_cash && (item.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'))) ||
+            (item.deskripsi_pengeluaran_transfer && (item.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang')));
+
+          let omsetRowCalculated = pmsknRow + pengeluaranRow + piutangRow;
+          if (checkPelunasan) {
+            omsetRowCalculated = piutangRow;
+          }
 
           const dateObj = new Date(item.tanggal + 'T00:00:00');
           const dateStringFormatted = dateObj.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -1496,14 +1546,36 @@
       const target = dataLaporan.find(i => i.id === id);
       if (!target) return;
 
-      const targetPiutang = dataPiutang.filter(p => p.tanggal_piutang === target.tanggal);
-      let listPiutangHTML = '';
-      if (targetPiutang.length > 0) {
-        targetPiutang.forEach(p => {
-          listPiutangHTML += `<div style="font-size:12px; color:#eab308; margin-top:2px;">• ${p.nama_nasabah} (${formatRupiah(p.nominal)}) [${p.status}]</div>`;
-        });
+      const checkPelunasan = (target.deskripsi_pengeluaran_cash && (target.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || target.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'))) ||
+        (target.deskripsi_pengeluaran_transfer && (target.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || target.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang')));
+
+      let listPiutangHTML = '<span class="detail-val">-</span>';
+
+      if (checkPelunasan) {
+        let notaDitemukan = "";
+        const kataKunci = target.deskripsi_pengeluaran_cash || target.deskripsi_pengeluaran_transfer || "";
+        const cocokNota = kataKunci.match(/Nota\s([^\s]+)/);
+        if (cocokNota && cocokNota[1]) {
+          notaDitemukan = cocokNota[1];
+        }
+
+        if (notaDitemukan) {
+          const targetPiutangSpesifik = dataPiutang.filter(p => p.no_nota === notaDitemukan);
+          if (targetPiutangSpesifik.length > 0) {
+            listPiutangHTML = '';
+            targetPiutangSpesifik.forEach(p => {
+              listPiutangHTML += `<div style="font-size:12px; color:#eab308; margin-top:2px;">• ${p.nama_nasabah} (${formatRupiah(p.nominal)}) [${p.status}]</div>`;
+            });
+          }
+        }
       } else {
-        listPiutangHTML = '<span class="detail-val">-</span>';
+        const targetPiutang = dataPiutang.filter(p => p.tanggal_piutang === target.tanggal);
+        if (targetPiutang.length > 0) {
+          listPiutangHTML = '';
+          targetPiutang.forEach(p => {
+            listPiutangHTML += `<div style="font-size:12px; color:#eab308; margin-top:2px;">• ${p.nama_nasabah} (${formatRupiah(p.nominal)}) [${p.status}]</div>`;
+          });
+        }
       }
 
       const body = document.getElementById('modal-details-body');
@@ -1770,10 +1842,21 @@
         if (!groupedData[item.tanggal]) {
           groupedData[item.tanggal] = { omset: 0, out: 0 };
         }
-        const pmskn = (item.cash_aktual || 0) + (item.transfer_aktual || 0);
+
+        const checkPelunasan = (item.deskripsi_pengeluaran_cash && (item.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'))) ||
+          (item.deskripsi_pengeluaran_transfer && (item.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang')));
+
         const pengeluaran = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
-        const piutangHariIni = dataPiutang.filter(p => p.tanggal_piutang === item.tanggal && p.status !== 'Lunas').reduce((sum, p) => sum + (p.nominal || 0), 0);
-        groupedData[item.tanggal].omset += (pmskn + pengeluaran + piutangHariIni);
+
+        if (!checkPelunasan) {
+          const pmskn = (item.cash_aktual || 0) + (item.transfer_aktual || 0);
+          const piutangHariIni = dataPiutang.filter(p => p.tanggal_piutang === item.tanggal).reduce((sum, p) => sum + (p.nominal || 0), 0);
+          groupedData[item.tanggal].omset += (pmskn + pengeluaran + piutangHariIni);
+        } else {
+          const piutangHariIni = dataPiutang.filter(p => p.tanggal_piutang === item.tanggal).reduce((sum, p) => sum + (p.nominal || 0), 0);
+          groupedData[item.tanggal].omset += piutangHariIni;
+        }
+
         groupedData[item.tanggal].out += pengeluaran;
       });
 
