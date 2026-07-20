@@ -65,6 +65,38 @@
       color: var(--accent);
     }
 
+    .burger-btn {
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      width: 24px;
+      height: 18px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      z-index: 1100;
+    }
+
+    .burger-btn span {
+      width: 100%;
+      height: 2px;
+      background-color: var(--text-main);
+      border-radius: 2px;
+      transition: all 0.3s ease;
+    }
+
+    .burger-btn.open-burger span:nth-child(1) {
+      transform: translateY(8px) rotate(45deg);
+    }
+
+    .burger-btn.open-burger span:nth-child(2) {
+      opacity: 0;
+    }
+
+    .burger-btn.open-burger span:nth-child(3) {
+      transform: translateY(-8px) rotate(-45deg);
+    }
+
     .nav-menu {
       display: flex;
       align-items: center;
@@ -593,18 +625,46 @@
     @media (max-width: 900px) {
       .navbar {
         padding: 0 20px;
-        height: auto;
-        flex-direction: column;
-        padding-bottom: 12px;
+        height: 75px;
+        flex-direction: row;
       }
 
-      .logo {
-        margin-top: 12px;
-        margin-bottom: 12px;
+      .burger-btn {
+        display: flex;
+      }
+
+      .nav-menu {
+        position: fixed;
+        top: 75px;
+        left: 0;
+        width: 100%;
+        height: calc(100vh - 75px);
+        background-color: rgba(6, 9, 19, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        flex-direction: column;
+        align-items: stretch;
+        padding: 30px 20px;
+        gap: 16px;
+        transform: translateX(100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 1050;
+        border-top: 1px solid var(--border);
+      }
+
+      .nav-menu.active-burger {
+        transform: translateX(0);
+      }
+
+      .nav-menu a {
+        font-size: 16px;
+        padding: 16px 20px;
+        justify-content: center;
+        width: 100%;
       }
 
       .container {
-        padding: 160px 20px 40px 20px;
+        padding: 115px 20px 40px 20px;
       }
 
       .table-header-flex {
@@ -640,7 +700,12 @@
 
   <nav class="navbar">
     <div class="logo">Plaza <span>Minuman</span></div>
-    <ul class="nav-menu">
+    <button class="burger-btn" id="burger-trigger">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+    <ul class="nav-menu" id="nav-menu-container">
       <li id="nav-item-overview"><a href="#" class="nav-link active-link" data-target="page-overview">Dashboard</a></li>
       <li><a href="#" class="nav-link" data-target="page-input-laporan">Input Laporan</a></li>
       <li><a href="#" class="nav-link" data-target="page-piutang">Piutang Nasabah</a></li>
@@ -968,6 +1033,14 @@
     const SUPABASE_ANON_KEY = "sb_publishable_blMwzDZ5pM1TciQzhsg8UQ_cCB_ixOQ";
     const clientSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    const burgerTrigger = document.getElementById('burger-trigger');
+    const navMenuContainer = document.getElementById('nav-menu-container');
+
+    burgerTrigger.addEventListener('click', () => {
+      burgerTrigger.classList.toggle('open-burger');
+      navMenuContainer.classList.toggle('active-burger');
+    });
+
     document.querySelector('.subtitle span').innerText = activeName || activeAdmin;
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -994,6 +1067,8 @@
     if (logoutBtn) {
       logoutBtn.addEventListener('click', function (e) {
         e.preventDefault();
+        burgerTrigger.classList.remove('open-burger');
+        navMenuContainer.classList.remove('active-burger');
         if (confirm('Apakah kamu yakin ingin keluar?')) {
           localStorage.clear();
           window.location.href = 'login.html';
@@ -1007,6 +1082,10 @@
     navLinks.forEach(link => {
       link.addEventListener('click', (e) => {
         e.preventDefault();
+
+        burgerTrigger.classList.remove('open-burger');
+        navMenuContainer.classList.remove('active-burger');
+
         navLinks.forEach(l => l.classList.remove('active-link'));
         link.classList.add('active-link');
 
