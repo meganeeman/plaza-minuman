@@ -1045,7 +1045,6 @@
         <input type="hidden" id="lunas-piutang-nominal">
         <input type="hidden" id="lunas-piutang-nota">
         <input type="hidden" id="lunas-piutang-nasabah">
-        <input type="hidden" id="lunas-piutang-sisa">
 
         <div class="form-group">
           <label for="lunas-tipe">Tipe Pembayaran</label>
@@ -1232,19 +1231,19 @@
       let accumSetoran = 0;
 
       dataLaporan.forEach(item => {
-        const pmskn = (item.cash_aktual || 0) + (item.transfer_aktual || 0);
-        const pengeluaran = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
-
         const checkCashPelunasan = item.deskripsi_pengeluaran_cash && (item.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'));
         const checkTrfPelunasan = item.deskripsi_pengeluaran_transfer && (item.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang'));
         const isPelunasan = checkCashPelunasan || checkTrfPelunasan;
 
         if (!isPelunasan) {
+          const cashMasuk = item.cash_aktual || 0;
+          const transferMasuk = item.transfer_aktual || 0;
+
           const piutangHariIni = dataPiutang
             .filter(p => p.tanggal_piutang === item.tanggal)
             .reduce((sum, p) => sum + (p.nominal || 0), 0);
 
-          accumOmset += (pmskn + pengeluaran + piutangHariIni);
+          accumOmset += (cashMasuk + transferMasuk + piutangHariIni);
         }
 
         accumOutCash += (item.pengeluaran_cash || 0);
@@ -1272,13 +1271,10 @@
       const groupedRows = {};
       dataLaporan.forEach(item => {
         if (!groupedRows[item.tanggal]) {
-          groupedRows[item.tanggal] = { cash_masuk: 0, transfer_masuk: 0, out_cash: 0, out_trf: 0 };
+          groupedRows[item.tanggal] = { cash_masuk: 0, transfer_masuk: 0 };
         }
-
         groupedRows[item.tanggal].cash_masuk += (item.cash_aktual || 0);
         groupedRows[item.tanggal].transfer_masuk += (item.transfer_aktual || 0);
-        groupedRows[item.tanggal].out_cash += (item.pengeluaran_cash || 0);
-        groupedRows[item.tanggal].out_trf += (item.pengeluaran_transfer || 0);
       });
 
       Object.keys(groupedRows).sort().reverse().slice(0, 5).forEach(tgl => {
@@ -1288,12 +1284,8 @@
           .filter(item => item.tanggal === tgl && !((item.deskripsi_pengeluaran_cash && (item.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'))) || (item.deskripsi_pengeluaran_transfer && (item.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang')))))
           .reduce((sum, item) => sum + (item.cash_aktual || 0) + (item.transfer_aktual || 0), 0);
 
-        const rawOutNonPelunasan = dataLaporan
-          .filter(item => item.tanggal === tgl)
-          .reduce((sum, item) => sum + (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0), 0);
-
         const piutangRow = dataPiutang.filter(p => p.tanggal_piutang === tgl).reduce((sum, p) => sum + (p.nominal || 0), 0);
-        const omsetRowCalculated = rawPmsknNonPelunasan + rawOutNonPelunasan + piutangRow;
+        const omsetRowCalculated = rawPmsknNonPelunasan + piutangRow;
 
         miniBody.innerHTML += `
           <tr>
@@ -1355,7 +1347,7 @@
           const checkTrfPelunasan = item.deskripsi_pengeluaran_transfer && (item.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang'));
           const isPelunasan = checkCashPelunasan || checkTrfPelunasan;
 
-          let omsetRowCalculated = (item.cash_aktual || 0) + (item.transfer_aktual || 0) + (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0) + piutangRow;
+          let omsetRowCalculated = (item.cash_aktual || 0) + (item.transfer_aktual || 0) + piutangRow;
           if (isPelunasan) {
             omsetRowCalculated = piutangRow;
           }
@@ -1398,7 +1390,6 @@
           let statusLabel = item.status || 'Belum Lunas';
           let statusClass = 'belum-lunas';
           let nominalColor = 'var(--danger)';
-          let extraInfo = '';
 
           if (item.status === 'Lunas') {
             statusClass = 'lunas';
@@ -1406,14 +1397,11 @@
           } else if (item.status && item.status.includes('Diangsur')) {
             statusClass = 'angsuran';
             nominalColor = 'var(--warning)';
-            if (item.sisa_piutang !== undefined && item.sisa_piutang !== null) {
-              extraInfo = `<br><span style="font-size:11px; opacity:0.8;">(Sisa: ${formatRupiah(item.sisa_piutang)})</span>`;
-            }
           }
 
           let actionButtons = '';
           if (item.status !== 'Lunas') {
-            actionButtons += `<button class="btn-table-lunas" onclick="bukaLunasModal(${item.id}, ${item.nominal}, '${item.no_nota}', '${item.nama_nasabah}', ${item.sisa_piutang !== undefined && item.sisa_piutang !== null ? item.sisa_piutang : item.nominal})">Proses Bayar</button>`;
+            actionButtons += `<button class="btn-table-lunas" onclick="bukaLunasModal(${item.id}, ${item.nominal}, '${item.no_nota}', '${item.nama_nasabah}')">Proses Bayar</button>`;
           }
           actionButtons += `<button class="btn-table-edit" onclick="pemicuEditPiutang(${item.id})">Edit</button>`;
           if (activeRole === 'master') {
@@ -1426,7 +1414,7 @@
               <td>${item.no_nota}</td>
               <td><strong>${item.nama_nasabah}</strong></td>
               <td style="color:#eab308;">${item.jatuh_tempo}</td>
-              <td style="color:${nominalColor}; font-weight:600;">${formatRupiah(item.nominal || 0)}${extraInfo}</td>
+              <td style="color:${nominalColor}; font-weight:600;">${formatRupiah(item.nominal || 0)}</td>
               <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
               <td><span class="admin-badge">${item.admin || 'Cabang'}</span></td>
               <td><div class="action-btn-group">${actionButtons}</div></td>
@@ -1436,12 +1424,11 @@
       });
     }
 
-    window.bukaLunasModal = function (id, nominal, nota, nasabah, sisaSekarang) {
+    window.bukaLunasModal = function (id, nominal, nota, nasabah) {
       document.getElementById('lunas-piutang-id').value = id;
       document.getElementById('lunas-piutang-nominal').value = nominal;
       document.getElementById('lunas-piutang-nota').value = nota;
       document.getElementById('lunas-piutang-nasabah').value = nasabah;
-      document.getElementById('lunas-piutang-sisa').value = sisaSekarang;
 
       document.getElementById('lunas-tipe').value = 'PENUH';
       document.getElementById('container-nominal-angsuran').style.display = 'none';
@@ -1460,16 +1447,14 @@
       e.preventDefault();
 
       const id = document.getElementById('lunas-piutang-id').value;
-      const nominalAwal = parseFloat(document.getElementById('lunas-piutang-nominal').value) || 0;
-      const sisaLalu = parseFloat(document.getElementById('lunas-piutang-sisa').value) || nominalAwal;
+      const nominalTotal = parseFloat(document.getElementById('lunas-piutang-nominal').value) || 0;
       const tipe = document.getElementById('lunas-tipe').value;
       const metode = document.getElementById('lunas-metode').value;
       const customDesc = document.getElementById('lunas-desc').value.trim();
       const currentToday = new Date().toISOString().split('T')[0];
 
-      let danaMasuk = sisaLalu;
+      let danaMasuk = nominalTotal;
       let statusBaru = 'Lunas';
-      let sisaPiutangBaru = 0;
 
       if (tipe === 'ANGSUR') {
         danaMasuk = cleanRupiahValue(document.getElementById('lunas-nominal-angsuran').value);
@@ -1477,13 +1462,7 @@
           alert('Gagal! Nominal angsuran wajib diisi lebih dari Rp 0.');
           return;
         }
-        if (danaMasuk >= sisaLalu) {
-          statusBaru = 'Lunas';
-          sisaPiutangBaru = 0;
-        } else {
-          statusBaru = 'Belum Lunas (Diangsur)';
-          sisaPiutangBaru = sisaLalu - danaMasuk;
-        }
+        statusBaru = 'Belum Lunas (Diangsur)';
       }
 
       const btn = this.querySelector('button[type="submit"]');
@@ -1491,8 +1470,7 @@
       btn.innerText = "Memproses...";
 
       const resPiutang = await clientSupabase.from('piutang').update({
-        status: statusBaru,
-        sisa_piutang: sisaPiutangBaru
+        status: statusBaru
       }).eq('id', id);
 
       if (resPiutang.error) {
@@ -1776,10 +1754,6 @@
         status: 'Belum Lunas'
       };
 
-      if (!idPiutang) {
-        paketData.sisa_piutang = nominalInput;
-      }
-
       let hasil;
       if (idPiutang) {
         hasil = await clientSupabase.from('piutang').update(paketData).eq('id', idPiutang);
@@ -1863,9 +1837,10 @@
         const pengeluaran = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
 
         if (!isPelunasan) {
-          const pmskn = (item.cash_aktual || 0) + (item.transfer_aktual || 0);
+          const cashMasuk = item.cash_aktual || 0;
+          const transferMasuk = item.transfer_aktual || 0;
           const piutangHariIni = dataPiutang.filter(p => p.tanggal_piutang === item.tanggal).reduce((sum, p) => sum + (p.nominal || 0), 0);
-          groupedData[item.tanggal].omset += (pmskn + pengeluaran + piutangHariIni);
+          groupedData[item.tanggal].omset += (cashMasuk + transferMasuk + piutangHariIni);
         } else {
           const piutangHariIni = dataPiutang.filter(p => p.tanggal_piutang === item.tanggal).reduce((sum, p) => sum + (p.nominal || 0), 0);
           groupedData[item.tanggal].omset += piutangHariIni;
