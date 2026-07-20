@@ -1235,8 +1235,9 @@
         const pmskn = (item.cash_aktual || 0) + (item.transfer_aktual || 0);
         const pengeluaran = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
 
-        const isPelunasan = (item.deskripsi_pengeluaran_cash && (item.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'))) ||
-          (item.deskripsi_pengeluaran_transfer && (item.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang')));
+        const checkCashPelunasan = item.deskripsi_pengeluaran_cash && (item.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'));
+        const checkTrfPelunasan = item.deskripsi_pengeluaran_transfer && (item.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang'));
+        const isPelunasan = checkCashPelunasan || checkTrfPelunasan;
 
         if (!isPelunasan) {
           const piutangHariIni = dataPiutang
@@ -1271,14 +1272,7 @@
       const groupedRows = {};
       dataLaporan.forEach(item => {
         if (!groupedRows[item.tanggal]) {
-          groupedRows[item.tanggal] = { cash_masuk: 0, transfer_masuk: 0, out_cash: 0, out_trf: 0, has_pelunasan: false };
-        }
-
-        const checkPelunasan = (item.deskripsi_pengeluaran_cash && (item.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'))) ||
-          (item.deskripsi_pengeluaran_transfer && (item.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang')));
-
-        if (checkPelunasan) {
-          groupedRows[item.tanggal].has_pelunasan = true;
+          groupedRows[item.tanggal] = { cash_masuk: 0, transfer_masuk: 0, out_cash: 0, out_trf: 0 };
         }
 
         groupedRows[item.tanggal].cash_masuk += (item.cash_aktual || 0);
@@ -1289,22 +1283,17 @@
 
       Object.keys(groupedRows).sort().reverse().slice(0, 5).forEach(tgl => {
         const row = groupedRows[tgl];
-        const pmsknRow = row.cash_masuk + row.transfer_masuk;
-        const pengeluaranRow = row.out_cash + row.out_trf;
+
+        const rawPmsknNonPelunasan = dataLaporan
+          .filter(item => item.tanggal === tgl && !((item.deskripsi_pengeluaran_cash && (item.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'))) || (item.deskripsi_pengeluaran_transfer && (item.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang')))))
+          .reduce((sum, item) => sum + (item.cash_aktual || 0) + (item.transfer_aktual || 0), 0);
+
+        const rawOutNonPelunasan = dataLaporan
+          .filter(item => item.tanggal === tgl)
+          .reduce((sum, item) => sum + (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0), 0);
+
         const piutangRow = dataPiutang.filter(p => p.tanggal_piutang === tgl).reduce((sum, p) => sum + (p.nominal || 0), 0);
-
-        let omsetRowCalculated = pmsknRow + pengeluaranRow + piutangRow;
-        if (row.has_pelunasan) {
-          const rawPmsknNonPelunasan = dataLaporan
-            .filter(item => item.tanggal === tgl && !((item.deskripsi_pengeluaran_cash && (item.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'))) || (item.deskripsi_pengeluaran_transfer && (item.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang')))))
-            .reduce((sum, item) => sum + (item.cash_aktual || 0) + (item.transfer_aktual || 0), 0);
-
-          const rawOutNonPelunasan = dataLaporan
-            .filter(item => item.tanggal === tgl && !((item.deskripsi_pengeluaran_cash && (item.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'))) || (item.deskripsi_pengeluaran_transfer && (item.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang')))))
-            .reduce((sum, item) => sum + (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0), 0);
-
-          omsetRowCalculated = rawPmsknNonPelunasan + rawOutNonPelunasan + piutangRow;
-        }
+        const omsetRowCalculated = rawPmsknNonPelunasan + rawOutNonPelunasan + piutangRow;
 
         miniBody.innerHTML += `
           <tr>
@@ -1358,18 +1347,16 @@
 
       dataLaporan.forEach(item => {
         if (!filter || item.tanggal === filter) {
-          const pmsknRow = (item.cash_aktual || 0) + (item.transfer_aktual || 0);
-          const pengeluaranRow = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
-
           const piutangRow = dataPiutang
             .filter(p => p.tanggal_piutang === item.tanggal)
             .reduce((sum, p) => sum + (p.nominal || 0), 0);
 
-          const checkPelunasan = (item.deskripsi_pengeluaran_cash && (item.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'))) ||
-            (item.deskripsi_pengeluaran_transfer && (item.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang')));
+          const checkCashPelunasan = item.deskripsi_pengeluaran_cash && (item.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'));
+          const checkTrfPelunasan = item.deskripsi_pengeluaran_transfer && (item.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang'));
+          const isPelunasan = checkCashPelunasan || checkTrfPelunasan;
 
-          let omsetRowCalculated = pmsknRow + pengeluaranRow + piutangRow;
-          if (checkPelunasan) {
+          let omsetRowCalculated = (item.cash_aktual || 0) + (item.transfer_aktual || 0) + (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0) + piutangRow;
+          if (isPelunasan) {
             omsetRowCalculated = piutangRow;
           }
 
@@ -1387,7 +1374,7 @@
               <td style="color:var(--accent); font-weight:600;">${formatRupiah(omsetRowCalculated)}</td>
               <td>${formatRupiah(item.cash_aktual || 0)}</td>
               <td>${formatRupiah(item.transfer_aktual || 0)}</td>
-              <td style="color:var(--danger);">${formatRupiah(pengeluaranRow)}</td>
+              <td style="color:var(--danger);">${formatRupiah((item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0))}</td>
               <td><span class="admin-badge">${item.admin || 'Cabang'}</span></td>
               <td><div class="action-btn-group">${actionButtons}</div></td>
             </tr>
@@ -1565,12 +1552,13 @@
       const target = dataLaporan.find(i => i.id === id);
       if (!target) return;
 
-      const checkPelunasan = (target.deskripsi_pengeluaran_cash && (target.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || target.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'))) ||
-        (target.deskripsi_pengeluaran_transfer && (target.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || target.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang')));
+      const checkCashPelunasan = target.deskripsi_pengeluaran_cash && (target.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || target.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'));
+      const checkTrfPelunasan = target.deskripsi_pengeluaran_transfer && (target.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || target.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang'));
+      const isPelunasan = checkCashPelunasan || checkTrfPelunasan;
 
       let listPiutangHTML = '<span class="detail-val">-</span>';
 
-      if (checkPelunasan) {
+      if (isPelunasan) {
         let notaDitemukan = "";
         const kataKunci = target.deskripsi_pengeluaran_cash || target.deskripsi_pengeluaran_transfer || "";
         const cocokNota = kataKunci.match(/Nota\s([^\s]+)/);
@@ -1868,12 +1856,13 @@
           groupedData[item.tanggal] = { omset: 0, out: 0 };
         }
 
-        const checkPelunasan = (item.deskripsi_pengeluaran_cash && (item.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'))) ||
-          (item.deskripsi_pengeluaran_transfer && (item.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang')));
+        const checkCashPelunasan = item.deskripsi_pengeluaran_cash && (item.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'));
+        const checkTrfPelunasan = item.deskripsi_pengeluaran_transfer && (item.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang'));
+        const isPelunasan = checkCashPelunasan || checkTrfPelunasan;
 
         const pengeluaran = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
 
-        if (!checkPelunasan) {
+        if (!isPelunasan) {
           const pmskn = (item.cash_aktual || 0) + (item.transfer_aktual || 0);
           const piutangHariIni = dataPiutang.filter(p => p.tanggal_piutang === item.tanggal).reduce((sum, p) => sum + (p.nominal || 0), 0);
           groupedData[item.tanggal].omset += (pmskn + pengeluaran + piutangHariIni);
