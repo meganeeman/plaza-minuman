@@ -394,6 +394,12 @@
       margin-bottom: 20px;
     }
 
+    .search-container-flex {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .search-input {
       padding: 8px 14px;
       font-size: 13px;
@@ -407,6 +413,22 @@
     .search-input:focus {
       outline: none;
       border-color: var(--accent);
+    }
+
+    .btn-reset-filter {
+      background-color: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 8px 12px;
+      font-size: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-reset-filter:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: var(--text-main);
     }
 
     .table-responsive {
@@ -672,6 +694,10 @@
         align-items: flex-start;
       }
 
+      .search-container-flex {
+        width: 100%;
+      }
+
       .search-input {
         width: 100%;
       }
@@ -855,7 +881,10 @@
           <h2>Log Riwayat Input Laporan <span
               style="font-size:11px; color:var(--accent); font-weight:normal; margin-left:8px;">*Klik baris untuk
               melihat detail</span></h2>
-          <input type="text" id="search-laporan" class="search-input" placeholder="Cari tanggal...">
+          <div class="search-container-flex">
+            <input type="date" id="search-laporan" class="search-input" onclick="this.showPicker()">
+            <button class="btn-reset-filter" id="btn-clear-laporan-search">Reset</button>
+          </div>
         </div>
         <div class="table-responsive">
           <table id="table-laporan">
@@ -918,7 +947,9 @@
       <div class="card">
         <div class="table-header-flex">
           <h2>Log Riwayat Piutang Aktif</h2>
-          <input type="text" id="search-piutang" class="search-input" placeholder="Cari nasabah/nota...">
+          <div class="search-container-flex">
+            <input type="text" id="search-piutang" class="search-input" placeholder="Cari nasabah/nota...">
+          </div>
         </div>
         <div class="table-responsive">
           <table id="table-piutang">
@@ -1257,11 +1288,11 @@
         const selisihHari = Math.round(selisihMili / (1000 * 60 * 60 * 24));
 
         if (selisihHari === 0) {
-          noticesDanger.push(`🚨 <strong>HARI INI!</strong> Nota <strong>${p.no_nota}</strong> a.n <strong>${p.nama_nasabah}</strong> sebesar ${formatRupiah(p.nominal)} jatuh tempo <strong>HARI INI</strong> (${p.jatuh_tempo}). Hubungi nasabah sekarang juga untuk penagihan pembayaran!`);
+          noticesDanger.push(`🚨 <strong>HARI INI!</strong> Nota <strong>${p.no_nota}</strong> a.n <strong>${p.nama_nasabah}</strong> jatuh tempo <strong>HARI INI</strong> (${p.jatuh_tempo}).`);
         } else if (selisihHari < 0) {
-          noticesDanger.push(`🚨 <strong>PERINGATAN KERAS!</strong> Nota <strong>${p.no_nota}</strong> a.n <strong>${p.nama_nasabah}</strong> (${formatRupiah(p.nominal)}) telah <strong>TERLEWAT</strong> ${Math.abs(selisihHari)} hari dari batas jatuh tempo! Segera hubungi nasabah untuk penyelesaian!`);
+          noticesDanger.push(`🚨 <strong>PERINGATAN!</strong> Nota <strong>${p.no_nota}</strong> a.n <strong>${p.nama_nasabah}</strong> telah <strong>TERLEWAT</strong> ${Math.abs(selisihHari)} hari.`);
         } else if (selisihHari > 0 && selisihHari <= 3) {
-          noticesWarning.push(`⚠️ Nota <strong>${p.no_nota}</strong> a.n <strong>${p.nama_nasabah}</strong> sebesar ${formatRupiah(p.nominal)} akan jatuh tempo dalam ${selisihHari} hari (${p.jatuh_tempo}).`);
+          noticesWarning.push(`⚠️ Nota <strong>${p.no_nota}</strong> a.n <strong>${p.nama_nasabah}</strong> jatuh tempo dalam ${selisihHari} hari (${p.jatuh_tempo}).`);
         }
       });
 
@@ -1274,16 +1305,19 @@
     }
 
     function renderLaporanTable() {
-      const filter = document.getElementById('search-laporan').value.toLowerCase();
+      const filter = document.getElementById('search-laporan').value;
       const tbody = document.querySelector('#table-laporan tbody');
       tbody.innerHTML = '';
 
       dataLaporan.forEach(item => {
-        if (item.tanggal.toLowerCase().includes(filter)) {
+        if (!filter || item.tanggal === filter) {
           const pmsknRow = (item.cash_aktual || 0) + (item.transfer_aktual || 0);
           const pengeluaranRow = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
           const piutangRow = dataPiutang.filter(p => p.tanggal_piutang === item.tanggal && p.status !== 'Lunas').reduce((sum, p) => sum + (p.nominal || 0), 0);
           const omsetRowCalculated = pmsknRow + pengeluaranRow + piutangRow;
+
+          const dateObj = new Date(item.tanggal + 'T00:00:00');
+          const dateStringFormatted = dateObj.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
           let actionButtons = `<button class="btn-table-edit" onclick="event.stopPropagation(); pemicuEditLaporan(${item.id})">Edit</button>`;
           if (activeRole === 'master') {
@@ -1292,7 +1326,7 @@
 
           tbody.innerHTML += `
             <tr class="clickable-row" onclick="bukaDetailModal(${item.id})">
-              <td>${item.tanggal}</td>
+              <td><strong>${dateStringFormatted}</strong></td>
               <td style="color:var(--accent); font-weight:600;">${formatRupiah(omsetRowCalculated)}</td>
               <td>${formatRupiah(item.cash_aktual || 0)}</td>
               <td>${formatRupiah(item.transfer_aktual || 0)}</td>
@@ -1304,6 +1338,11 @@
         }
       });
     }
+
+    document.getElementById('btn-clear-laporan-search').addEventListener('click', function () {
+      document.getElementById('search-laporan').value = '';
+      renderLaporanTable();
+    });
 
     function renderPiutangTable() {
       const filter = document.getElementById('search-piutang').value.toLowerCase();
@@ -1726,34 +1765,36 @@
       const ctx = document.getElementById('cabangChart').getContext('2d');
       if (cChart) cChart.destroy();
 
-      let labels = [];
-      let datasetOmset = [];
-      let datasetOut = [];
-
-      const last7Days = dataLaporan.slice(0, 7).reverse();
-      last7Days.forEach(item => {
-        labels.push(item.tanggal);
-
-        const pmsknRow = (item.cash_aktual || 0) + (item.transfer_aktual || 0);
-        const pengeluaranRow = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
-        const piutangRow = dataPiutang.filter(p => p.tanggal_piutang === item.tanggal && p.status !== 'Lunas').reduce((sum, p) => sum + (p.nominal || 0), 0);
-
-        datasetOmset.push(pmsknRow + pengeluaranRow + piutangRow);
-        datasetOut.push(pengeluaranRow);
+      const groupedData = {};
+      dataLaporan.forEach(item => {
+        if (!groupedData[item.tanggal]) {
+          groupedData[item.tanggal] = { omset: 0, out: 0 };
+        }
+        const pmskn = (item.cash_aktual || 0) + (item.transfer_aktual || 0);
+        const pengeluaran = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
+        const piutangHariIni = dataPiutang.filter(p => p.tanggal_piutang === item.tanggal && p.status !== 'Lunas').reduce((sum, p) => sum + (p.nominal || 0), 0);
+        groupedData[item.tanggal].omset += (pmskn + pengeluaran + piutangHariIni);
+        groupedData[item.tanggal].out += pengeluaran;
       });
+
+      const sortedDates = Object.keys(groupedData).sort().slice(-7);
+      const labels = sortedDates;
+      const datasetOmset = sortedDates.map(d => groupedData[d].omset);
+      const datasetOut = sortedDates.map(d => groupedData[d].out);
 
       cChart = new Chart(ctx, {
         type: 'line',
         data: {
           labels: labels,
           datasets: [
-            { label: 'Omset Hari Ini', data: datasetOmset, borderColor: '#38bdf8', borderWidth: 2, tension: 0.3 },
+            { label: 'Omset', data: datasetOmset, borderColor: '#38bdf8', borderWidth: 2, tension: 0.3 },
             { label: 'Pengeluaran', data: datasetOut, borderColor: '#ef4444', borderWidth: 2, tension: 0.3 }
           ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
           scales: {
             x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
             y: { grid: { color: 'rgba(255,255,255,0.02)' }, ticks: { color: '#94a3b8' } }
@@ -1763,7 +1804,7 @@
       });
     }
 
-    document.getElementById('search-laporan').addEventListener('input', renderLaporanTable);
+    document.getElementById('search-laporan').addEventListener('change', renderLaporanTable);
     document.getElementById('search-piutang').addEventListener('input', renderPiutangTable);
 
     window.addEventListener('click', function (e) {
