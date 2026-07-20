@@ -932,6 +932,37 @@
     </div>
   </div>
 
+  <div id="lunasModal" class="custom-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 style="margin-bottom:0; font-size:16px; color:var(--success);">Konfirmasi Pelunasan Nota</h2>
+        <button class="modal-close" onclick="closeLunasModal()">&times;</button>
+      </div>
+      <form id="form-konfirmasi-lunas">
+        <input type="hidden" id="lunas-piutang-id">
+        <input type="hidden" id="lunas-piutang-nominal">
+        <input type="hidden" id="lunas-piutang-nota">
+        <input type="hidden" id="lunas-piutang-nasabah">
+
+        <div class="form-group">
+          <label for="lunas-metode">Metode Pembayaran Pelunasan</label>
+          <select id="lunas-metode" required>
+            <option value="CASH">Uang CASH / Lapangan</option>
+            <option value="TRANSFER">Via TRANSFER Bank (BRI)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="lunas-desc">Catatan / Keterangan Tambahan (Opsional)</label>
+          <input type="text" id="lunas-desc" placeholder="Tambahkan catatan khusus jika diperlukan">
+        </div>
+
+        <button type="submit" style="background:var(--success); color:#060913;">Konfirmasi Lunas & Sinkronisasi
+          Laporan</button>
+      </form>
+    </div>
+  </div>
+
   <script>
     const SUPABASE_URL = "https://vccwscybnhpatjioixfx.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_blMwzDZ5pM1TciQzhsg8UQ_cCB_ixOQ";
@@ -1176,7 +1207,7 @@
 
           let actionButtons = '';
           if (item.status !== 'Lunas') {
-            actionButtons += `<button class="btn-table-lunas" onclick="tandaiPiutangLunas(${item.id})">Tandai Lunas</button>`;
+            actionButtons += `<button class="btn-table-lunas" onclick="bukaLunasModal(${item.id}, ${item.nominal}, '${item.no_nota}', '${item.nama_nasabah}')">Tandai Lunas</button>`;
           }
           actionButtons += `<button class="btn-table-edit" onclick="pemicuEditPiutang(${item.id})">Edit</button>`;
           if (activeRole === 'master') {
@@ -1199,17 +1230,66 @@
       });
     }
 
-    window.tandaiPiutangLunas = async function (id) {
-      if (confirm('Apakah Anda yakin nota ini sudah lunas dibayarkan? Tindakan ini akan menghapus peringatan jatuh tempo.')) {
-        const { error } = await clientSupabase.from('piutang').update({ status: 'Lunas' }).eq('id', id);
-        if (!error) {
-          alert('Piutang berhasil diselesaikan!');
-          fetchDataAll();
-        } else {
-          alert('Gagal memperbarui status pelunasan.');
-        }
-      }
+    window.bukaLunasModal = function (id, nominal, nota, nasabah) {
+      document.getElementById('lunas-piutang-id').value = id;
+      document.getElementById('lunas-piutang-nominal').value = nominal;
+      document.getElementById('lunas-piutang-nota').value = nota;
+      document.getElementById('lunas-piutang-nasabah').value = nasabah;
+      document.getElementById('lunas-desc').value = `Pelunasan Nota ${nota} a.n ${nasabah}`;
+      document.getElementById('lunasModal').style.display = 'flex';
     };
+
+    window.closeLunasModal = function () {
+      document.getElementById('lunasModal').style.display = 'none';
+    };
+
+    document.getElementById('form-konfirmasi-lunas').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const id = document.getElementById('lunas-piutang-id').value;
+      const nominal = parseFloat(document.getElementById('lunas-piutang-nominal').value) || 0;
+      const metode = document.getElementById('lunas-metode').value;
+      const customDesc = document.getElementById('lunas-desc').value.trim();
+      const currentToday = new Date().toISOString().split('T')[0];
+
+      const btn = this.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.innerText = "Memproses...";
+
+      const resPiutang = await clientSupabase.from('piutang').update({ status: 'Lunas' }).eq('id', id);
+
+      if (resPiutang.error) {
+        alert('Gagal memperbarui status pelunasan.');
+        btn.disabled = false;
+        btn.innerText = "Konfirmasi Lunas & Sinkronisasi Laporan";
+        return;
+      }
+
+      const paketLaporan = {
+        tanggal: currentToday,
+        cash_aktual: metode === 'CASH' ? nominal : 0,
+        transfer_aktual: metode === 'TRANSFER' ? nominal : 0,
+        pengeluaran_cash: 0,
+        deskripsi_pengeluaran_cash: metode === 'CASH' ? customDesc : '',
+        pengeluaran_transfer: 0,
+        deskripsi_pengeluaran_transfer: metode === 'TRANSFER' ? customDesc : '',
+        admin: activeName || activeAdmin
+      };
+
+      const resLaporan = await clientSupabase.from('laporan_cabang').insert([paketLaporan]);
+
+      btn.disabled = false;
+      btn.innerText = "Konfirmasi Lunas & Sinkronisasi Laporan";
+      closeLunasModal();
+
+      if (!resLaporan.error) {
+        alert('Piutang diselesaikan dan otomatis tercatat di log laporan harian hari ini!');
+        fetchDataAll();
+      } else {
+        alert('Status piutang lunas, namun gagal menyelaraskan ke log laporan harian.');
+        fetchDataAll();
+      }
+    });
 
     function renderSetorTable() {
       const tbody = document.querySelector('#table-setor tbody');
@@ -1470,7 +1550,7 @@
 
       const paketData = {
         tanggal_setor: document.getElementById('setor-tanggal').value,
-        shadow_setoran: cleanRupiahValue(document.getElementById('setor-jumlah').value),
+        jumlah_setoran: cleanRupiahValue(document.getElementById('setor-jumlah').value),
         admin: activeName || activeAdmin
       };
 
@@ -1544,8 +1624,10 @@
     document.getElementById('search-piutang').addEventListener('input', renderPiutangTable);
 
     window.addEventListener('click', function (e) {
-      const modal = document.getElementById('detailModal');
-      if (e.target === modal) closeDetailModal();
+      const modalDetail = document.getElementById('detailModal');
+      const modalLunas = document.getElementById('lunasModal');
+      if (e.target === modalDetail) closeDetailModal();
+      if (e.target === modalLunas) closeLunasModal();
     });
 
     function startClock() {
