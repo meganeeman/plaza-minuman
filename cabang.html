@@ -1208,7 +1208,7 @@
         const resLap = await clientSupabase.from('laporan_cabang').select('*').order('tanggal', { ascending: false });
         const resSetor = await clientSupabase.from('setor_bank_cabang').select('*').order('tanggal_setor', { ascending: false });
         const resPiutang = await clientSupabase.from('piutang').select('*').order('tanggal_piutang', { ascending: false });
-        const resAngsuran = await clientSupabase.from('history_angsuran').select('*');
+        const resAngsuran = await clientSupabase.from('history_angsuran').select('*').order('id', { ascending: true });
 
         if (!resLap.error) dataLaporan = resLap.data || [];
         if (!resSetor.error) dataSetor = resSetor.data || [];
@@ -1237,7 +1237,9 @@
       let accumAngsuranTrf = 0;
 
       dataLaporan.forEach(item => {
-        accumOmset += ((item.cash_aktual || 0) + (item.transfer_aktual || 0));
+        const outRow = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
+        accumOmset += ((item.cash_aktual || 0) + (item.transfer_aktual || 0) + outRow);
+
         accumOutCash += (item.pengeluaran_cash || 0);
         accumOutTrf += (item.pengeluaran_transfer || 0);
         accumCashAktual += (item.cash_aktual || 0);
@@ -1275,22 +1277,23 @@
       const groupedRows = {};
       dataLaporan.forEach(item => {
         if (!groupedRows[item.tanggal]) {
-          groupedRows[item.tanggal] = { cash_masuk: 0, transfer_masuk: 0 };
+          groupedRows[item.tanggal] = { cash: 0, trf: 0, out: 0 };
         }
-        groupedRows[item.tanggal].cash_masuk += (item.cash_aktual || 0);
-        groupedRows[item.tanggal].transfer_masuk += (item.transfer_aktual || 0);
+        groupedRows[item.tanggal].cash += (item.cash_aktual || 0);
+        groupedRows[item.tanggal].trf += (item.transfer_aktual || 0);
+        groupedRows[item.tanggal].out += ((item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0));
       });
 
       Object.keys(groupedRows).sort().reverse().slice(0, 5).forEach(tgl => {
         const row = groupedRows[tgl];
         const piutangRow = dataPiutang.filter(p => p.tanggal_piutang === tgl).reduce((sum, p) => sum + (p.nominal || 0), 0);
-        const omsetRowCalculated = row.cash_masuk + row.transfer_masuk + piutangRow;
+        const omsetRowCalculated = row.cash + row.trf + row.out + piutangRow;
 
         miniBody.innerHTML += `
           <tr>
             <td><strong>${tgl}</strong></td>
             <td style="color:var(--accent)">${formatRupiah(omsetRowCalculated)}</td>
-            <td style="color:var(--success)">${formatRupiah(row.cash_masuk)}</td>
+            <td style="color:var(--success)">${formatRupiah(row.cash)}</td>
           </tr>
         `;
       });
@@ -1342,7 +1345,8 @@
             .filter(p => p.tanggal_piutang === item.tanggal)
             .reduce((sum, p) => sum + (p.nominal || 0), 0);
 
-          let omsetRowCalculated = (item.cash_aktual || 0) + (item.transfer_aktual || 0) + piutangRow;
+          const totalOutRow = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
+          let omsetRowCalculated = (item.cash_aktual || 0) + (item.transfer_aktual || 0) + totalOutRow + piutangRow;
 
           const dateObj = new Date(item.tanggal + 'T00:00:00');
           const dateStringFormatted = dateObj.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -1358,7 +1362,7 @@
               <td style="color:var(--accent); font-weight:600;">${formatRupiah(omsetRowCalculated)}</td>
               <td>${formatRupiah(item.cash_aktual || 0)}</td>
               <td>${formatRupiah(item.transfer_aktual || 0)}</td>
-              <td style="color:var(--danger);">${formatRupiah((item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0))}</td>
+              <td style="color:var(--danger);">${formatRupiah(totalOutRow)}</td>
               <td><span class="admin-badge">${item.admin || 'Cabang'}</span></td>
               <td><div class="action-btn-group">${actionButtons}</div></td>
             </tr>
@@ -1537,15 +1541,53 @@
       const target = dataLaporan.find(i => i.id === id);
       if (!target) return;
 
-      let listPiutangHTML = '';
-      const targetPiutang = dataPiutang.filter(p => p.tanggal_piutang === target.tanggal);
-      if (targetPiutang.length > 0) {
-        targetPiutang.forEach(p => {
-          listPiutangHTML += `<div style="font-size:12px; color:#eab308; margin-top:2px;">• ${p.nama_nasabah} (${formatRupiah(p.nominal)}) [${p.status}]</div>`;
+      let listPiutangBaruHTML = '';
+      const targetPiutangBaru = dataPiutang.filter(p => p.tanggal_piutang === target.tanggal);
+      if (targetPiutangBaru.length > 0) {
+        targetPiutangBaru.forEach(p => {
+          listPiutangBaruHTML += `<div style="font-size:12px; color:#38bdf8; margin-top:2px;">• Nota ${p.no_nota} a.n ${p.nama_nasabah} (${formatRupiah(p.nominal)})</div>`;
         });
       } else {
-        listPiutangHTML = '<span class="detail-val">-</span>';
+        listPiutangBaruHTML = '<span class="detail-val">-</span>';
       }
+
+      let listArusAngsuranHTML = '';
+      const targetAngsuranMasuk = dataAngsuran.filter(a => a.tanggal === target.tanggal);
+      if (targetAngsuranMasuk.length > 0) {
+        const globalCounters = {};
+
+        targetAngsuranMasuk.forEach(angsuranRow => {
+          const infoPiutangInduk = dataPiutang.find(p => p.id === angsuranRow.piutang_id);
+          const namaNasabah = infoPiutangInduk ? infoPiutangInduk.nama_nasabah : 'Nasabah';
+          const nominalTotalPiutang = infoPiutangInduk ? infoPiutangInduk.nominal : 0;
+
+          const historiSemuaAngsuranIdIni = dataAngsuran.filter(a => a.piutang_id === angsuranRow.piutang_id);
+
+          let totalTerbayarSampaiBarisIni = 0;
+          let labelStatus = `Angsuran`;
+          let indexUrutan = 1;
+
+          for (let i = 0; i < historiSemuaAngsuranIdIni.length; i++) {
+            totalTerbayarSampaiBarisIni += historiSemuaAngsuranIdIni[i].nominal;
+            if (historiSemuaAngsuranIdIni[i].id === angsuranRow.id) {
+              indexUrutan = i + 1;
+              break;
+            }
+          }
+
+          if (totalTerbayarSampaiBarisIni >= nominalTotalPiutang) {
+            labelStatus = `Pelunasan Penuh`;
+          } else {
+            labelStatus = `Angsuran ${indexUrutan}`;
+          }
+
+          listArusAngsuranHTML += `<div style="font-size:12px; color:#10b981; margin-top:2px;">• ${namaNasabah} - ${formatRupiah(angsuranRow.nominal)} (${labelStatus} - Via ${angsuranRow.metode})</div>`;
+        });
+      } else {
+        listArusAngsuranHTML = '<span class="detail-val">-</span>';
+      }
+
+      const totalOutRow = (target.pengeluaran_cash || 0) + (target.pengeluaran_transfer || 0);
 
       const body = document.getElementById('modal-details-body');
       body.innerHTML = `
@@ -1556,7 +1598,10 @@
         <div class="detail-item" style="flex-direction:column; align-items:flex-start;"><span class="detail-label">Ket Pengeluaran CASH</span><span class="detail-val" style="white-space:pre-wrap; margin-top:4px;">${target.deskripsi_pengeluaran_cash || '-'}</span></div>
         <div class="detail-item"><span class="detail-label">Pengeluaran - TRANSFER</span><span class="detail-val" style="color:var(--danger);">${formatRupiah(target.pengeluaran_transfer || 0)}</span></div>
         <div class="detail-item" style="flex-direction:column; align-items:flex-start;"><span class="detail-label">Ket Pengeluaran TRANSFER</span><span class="detail-val" style="white-space:pre-wrap; margin-top:4px;">${target.deskripsi_pengeluaran_transfer || '-'}</span></div>
-        <div class="detail-item" style="flex-direction:column; align-items:flex-start;"><span class="detail-label">Rincian Piutang Terikat</span>${listPiutangHTML}</div>
+        <div class="divider-line" style="margin: 15px 0;"></div>
+        <div class="detail-item" style="flex-direction:column; align-items:flex-start;"><span class="detail-label" style="color:#38bdf8; font-weight:600;">[A] Piutang Baru Terbentuk Hari Ini:</span>${listPiutangBaruHTML}</div>
+        <div class="detail-item" style="flex-direction:column; align-items:flex-start;"><span class="detail-label" style="color:#10b981; font-weight:600;">[B] Arus Cicilan Masuk Hari Ini:</span>${listArusAngsuranHTML}</div>
+        <div class="divider-line" style="margin: 15px 0;"></div>
         <div class="detail-item"><span class="detail-label">Dokumen Nota Fisik</span><span class="detail-val">${target.nota ? `<a href="${target.nota}" target="_blank" style="color:var(--accent); text-decoration:none;">Buka Tautan Lampiran</a>` : '-'}</span></div>
         <div class="detail-item"><span class="detail-label">Petugas Input</span><span class="detail-val"><span class="admin-badge">${target.admin || 'Cabang'}</span></span></div>
       `;
@@ -1820,8 +1865,10 @@
 
         const cashMasuk = item.cash_aktual || 0;
         const transferMasuk = item.transfer_aktual || 0;
-        groupedData[item.tanggal].omset += (cashMasuk + transferMasuk);
-        groupedData[item.tanggal].out += ((item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0));
+        const outRow = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
+
+        groupedData[item.tanggal].omset += (cashMasuk + transferMasuk + outRow);
+        groupedData[item.tanggal].out += outRow;
       });
 
       dataPiutang.forEach(item => {
