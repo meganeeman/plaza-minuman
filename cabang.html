@@ -1269,7 +1269,7 @@
 
       const sisaCashDiToko = accumCashAktual + accumAngsuranCash - accumOutCash - accumSetoran;
       const totalPengeluaran = accumOutCash + accumOutTrf;
-      const saldoBRIKalkulasi = saldoAwalBankGlobal + accumTransferAktual + accumAngsuranTrf - accumOutTrf;
+      const saldoBRIKalkulasi = saldoAwalBankGlobal + accumTransferAktual + accumAngsuranTrf + accumSetoran - accumOutTrf;
 
       document.getElementById('dash-omset').innerText = formatRupiah(accumOmset);
       document.getElementById('dash-pengeluaran').innerText = formatRupiah(totalPengeluaran);
