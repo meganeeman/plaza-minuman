@@ -1045,6 +1045,7 @@
         <input type="hidden" id="lunas-piutang-nominal">
         <input type="hidden" id="lunas-piutang-nota">
         <input type="hidden" id="lunas-piutang-nasabah">
+        <input type="hidden" id="lunas-piutang-sisa">
 
         <div class="form-group">
           <label for="lunas-tipe">Tipe Pembayaran</label>
@@ -1170,6 +1171,7 @@
     let dataLaporan = [];
     let dataSetor = [];
     let dataPiutang = [];
+    let dataAngsuran = [];
     let saldoAwalBankGlobal = 0;
     let cChart = null;
 
@@ -1206,10 +1208,12 @@
         const resLap = await clientSupabase.from('laporan_cabang').select('*').order('tanggal', { ascending: false });
         const resSetor = await clientSupabase.from('setor_bank_cabang').select('*').order('tanggal_setor', { ascending: false });
         const resPiutang = await clientSupabase.from('piutang').select('*').order('tanggal_piutang', { ascending: false });
+        const resAngsuran = await clientSupabase.from('history_angsuran').select('*');
 
         if (!resLap.error) dataLaporan = resLap.data || [];
         if (!resSetor.error) dataSetor = resSetor.data || [];
         if (!resPiutang.error) dataPiutang = resPiutang.data || [];
+        if (!resAngsuran.error) dataAngsuran = resAngsuran.data || [];
 
         processCalculations();
         renderLaporanTable();
@@ -1229,36 +1233,36 @@
       let accumCashAktual = 0;
       let accumTransferAktual = 0;
       let accumSetoran = 0;
+      let accumAngsuranCash = 0;
+      let accumAngsuranTrf = 0;
 
       dataLaporan.forEach(item => {
-        const checkCashPelunasan = item.deskripsi_pengeluaran_cash && (item.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'));
-        const checkTrfPelunasan = item.deskripsi_pengeluaran_transfer && (item.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang'));
-        const isPelunasan = checkCashPelunasan || checkTrfPelunasan;
-
-        if (!isPelunasan) {
-          const cashMasuk = item.cash_aktual || 0;
-          const transferMasuk = item.transfer_aktual || 0;
-
-          const piutangHariIni = dataPiutang
-            .filter(p => p.tanggal_piutang === item.tanggal)
-            .reduce((sum, p) => sum + (p.nominal || 0), 0);
-
-          accumOmset += (cashMasuk + transferMasuk + piutangHariIni);
-        }
-
+        accumOmset += ((item.cash_aktual || 0) + (item.transfer_aktual || 0));
         accumOutCash += (item.pengeluaran_cash || 0);
         accumOutTrf += (item.pengeluaran_transfer || 0);
         accumCashAktual += (item.cash_aktual || 0);
         accumTransferAktual += (item.transfer_aktual || 0);
       });
 
+      dataPiutang.forEach(item => {
+        accumOmset += (item.nominal || 0);
+      });
+
       dataSetor.forEach(item => {
         accumSetoran += (item.jumlah_setoran || 0);
       });
 
-      const sisaCashDiToko = accumCashAktual - accumOutCash - accumSetoran;
+      dataAngsuran.forEach(item => {
+        if (item.metode === 'CASH') {
+          accumAngsuranCash += (item.nominal || 0);
+        } else if (item.metode === 'TRANSFER') {
+          accumAngsuranTrf += (item.nominal || 0);
+        }
+      });
+
+      const sisaCashDiToko = accumCashAktual + accumAngsuranCash - accumOutCash - accumSetoran;
       const totalPengeluaran = accumOutCash + accumOutTrf;
-      const saldoBRIKalkulasi = saldoAwalBankGlobal + accumTransferAktual + accumSetoran - accumOutTrf;
+      const saldoBRIKalkulasi = saldoAwalBankGlobal + accumTransferAktual + accumAngsuranTrf + accumSetoran - accumOutTrf;
 
       document.getElementById('dash-omset').innerText = formatRupiah(accumOmset);
       document.getElementById('dash-pengeluaran').innerText = formatRupiah(totalPengeluaran);
@@ -1279,13 +1283,8 @@
 
       Object.keys(groupedRows).sort().reverse().slice(0, 5).forEach(tgl => {
         const row = groupedRows[tgl];
-
-        const rawPmsknNonPelunasan = dataLaporan
-          .filter(item => item.tanggal === tgl && !((item.deskripsi_pengeluaran_cash && (item.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'))) || (item.deskripsi_pengeluaran_transfer && (item.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang')))))
-          .reduce((sum, item) => sum + (item.cash_aktual || 0) + (item.transfer_aktual || 0), 0);
-
         const piutangRow = dataPiutang.filter(p => p.tanggal_piutang === tgl).reduce((sum, p) => sum + (p.nominal || 0), 0);
-        const omsetRowCalculated = rawPmsknNonPelunasan + piutangRow;
+        const omsetRowCalculated = row.cash_masuk + row.transfer_masuk + piutangRow;
 
         miniBody.innerHTML += `
           <tr>
@@ -1343,14 +1342,7 @@
             .filter(p => p.tanggal_piutang === item.tanggal)
             .reduce((sum, p) => sum + (p.nominal || 0), 0);
 
-          const checkCashPelunasan = item.deskripsi_pengeluaran_cash && (item.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'));
-          const checkTrfPelunasan = item.deskripsi_pengeluaran_transfer && (item.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang'));
-          const isPelunasan = checkCashPelunasan || checkTrfPelunasan;
-
           let omsetRowCalculated = (item.cash_aktual || 0) + (item.transfer_aktual || 0) + piutangRow;
-          if (isPelunasan) {
-            omsetRowCalculated = piutangRow;
-          }
 
           const dateObj = new Date(item.tanggal + 'T00:00:00');
           const dateStringFormatted = dateObj.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -1390,6 +1382,7 @@
           let statusLabel = item.status || 'Belum Lunas';
           let statusClass = 'belum-lunas';
           let nominalColor = 'var(--danger)';
+          let extraInfo = '';
 
           if (item.status === 'Lunas') {
             statusClass = 'lunas';
@@ -1399,9 +1392,15 @@
             nominalColor = 'var(--warning)';
           }
 
+          if (item.sisa_piutang !== undefined && item.sisa_piutang !== null) {
+            extraInfo = `<br><span style="font-size:11px; opacity:0.8;">(Sisa: ${formatRupiah(item.sisa_piutang)})</span>`;
+          } else {
+            extraInfo = `<br><span style="font-size:11px; opacity:0.8;">(Sisa: ${formatRupiah(item.nominal || 0)})</span>`;
+          }
+
           let actionButtons = '';
           if (item.status !== 'Lunas') {
-            actionButtons += `<button class="btn-table-lunas" onclick="bukaLunasModal(${item.id}, ${item.nominal}, '${item.no_nota}', '${item.nama_nasabah}')">Proses Bayar</button>`;
+            actionButtons += `<button class="btn-table-lunas" onclick="bukaLunasModal(${item.id}, ${item.nominal}, '${item.no_nota}', '${item.nama_nasabah}', ${item.sisa_piutang !== undefined && item.sisa_piutang !== null ? item.sisa_piutang : item.nominal})">Proses Bayar</button>`;
           }
           actionButtons += `<button class="btn-table-edit" onclick="pemicuEditPiutang(${item.id})">Edit</button>`;
           if (activeRole === 'master') {
@@ -1414,7 +1413,7 @@
               <td>${item.no_nota}</td>
               <td><strong>${item.nama_nasabah}</strong></td>
               <td style="color:#eab308;">${item.jatuh_tempo}</td>
-              <td style="color:${nominalColor}; font-weight:600;">${formatRupiah(item.nominal || 0)}</td>
+              <td style="color:${nominalColor}; font-weight:600;">${formatRupiah(item.nominal || 0)}${extraInfo}</td>
               <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
               <td><span class="admin-badge">${item.admin || 'Cabang'}</span></td>
               <td><div class="action-btn-group">${actionButtons}</div></td>
@@ -1424,11 +1423,12 @@
       });
     }
 
-    window.bukaLunasModal = function (id, nominal, nota, nasabah) {
+    window.bukaLunasModal = function (id, nominal, nota, nasabah, sisaSekarang) {
       document.getElementById('lunas-piutang-id').value = id;
       document.getElementById('lunas-piutang-nominal').value = nominal;
       document.getElementById('lunas-piutang-nota').value = nota;
       document.getElementById('lunas-piutang-nasabah').value = nasabah;
+      document.getElementById('lunas-piutang-sisa').value = sisaSekarang;
 
       document.getElementById('lunas-tipe').value = 'PENUH';
       document.getElementById('container-nominal-angsuran').style.display = 'none';
@@ -1447,14 +1447,16 @@
       e.preventDefault();
 
       const id = document.getElementById('lunas-piutang-id').value;
-      const nominalTotal = parseFloat(document.getElementById('lunas-piutang-nominal').value) || 0;
+      const nominalAwal = parseFloat(document.getElementById('lunas-piutang-nominal').value) || 0;
+      const sisaLalu = parseFloat(document.getElementById('lunas-piutang-sisa').value) || nominalAwal;
       const tipe = document.getElementById('lunas-tipe').value;
       const metode = document.getElementById('lunas-metode').value;
       const customDesc = document.getElementById('lunas-desc').value.trim();
       const currentToday = new Date().toISOString().split('T')[0];
 
-      let danaMasuk = nominalTotal;
+      let danaMasuk = sisaLalu;
       let statusBaru = 'Lunas';
+      let sisaPiutangBaru = 0;
 
       if (tipe === 'ANGSUR') {
         danaMasuk = cleanRupiahValue(document.getElementById('lunas-nominal-angsuran').value);
@@ -1462,7 +1464,13 @@
           alert('Gagal! Nominal angsuran wajib diisi lebih dari Rp 0.');
           return;
         }
-        statusBaru = 'Belum Lunas (Diangsur)';
+        if (danaMasuk >= sisaLalu) {
+          statusBaru = 'Lunas';
+          sisaPiutangBaru = 0;
+        } else {
+          statusBaru = 'Belum Lunas (Diangsur)';
+          sisaPiutangBaru = sisaLalu - danaMasuk;
+        }
       }
 
       const btn = this.querySelector('button[type="submit"]');
@@ -1470,7 +1478,8 @@
       btn.innerText = "Memproses...";
 
       const resPiutang = await clientSupabase.from('piutang').update({
-        status: statusBaru
+        status: statusBaru,
+        sisa_piutang: sisaPiutangBaru
       }).eq('id', id);
 
       if (resPiutang.error) {
@@ -1480,28 +1489,26 @@
         return;
       }
 
-      const paketLaporan = {
+      const paketAngsuran = {
+        piutang_id: id,
         tanggal: currentToday,
-        cash_aktual: metode === 'CASH' ? danaMasuk : 0,
-        transfer_aktual: metode === 'TRANSFER' ? danaMasuk : 0,
-        pengeluaran_cash: 0,
-        deskripsi_pengeluaran_cash: metode === 'CASH' ? customDesc : '',
-        pengeluaran_transfer: 0,
-        deskripsi_pengeluaran_transfer: metode === 'TRANSFER' ? customDesc : '',
+        nominal: danaMasuk,
+        metode: metode,
+        catatan: customDesc,
         admin: activeName || activeAdmin
       };
 
-      const resLaporan = await clientSupabase.from('laporan_cabang').insert([paketLaporan]);
+      const resHistori = await clientSupabase.from('history_angsuran').insert([paketAngsuran]);
 
       btn.disabled = false;
       btn.innerText = "Konfirmasi Transaksi & Sinkronisasi Laporan";
       closeLunasModal();
 
-      if (!resLaporan.error) {
-        alert(`Transaksi berhasil! Dana sebesar ${formatRupiah(danaMasuk)} otomatis tercatat di log laporan harian.`);
+      if (!resHistori.error) {
+        alert(`Sukses! Angsuran ${formatRupiah(danaMasuk)} tersimpan di histori tanpa mengotori log harian.`);
         fetchDataAll();
       } else {
-        alert('Data piutang terpotong, namun gagal menyelaraskan transaksi ke log laporan harian.');
+        alert('Data piutang terpotong, namun gagal menulis ke tabel history_angsuran.');
         fetchDataAll();
       }
     });
@@ -1530,37 +1537,14 @@
       const target = dataLaporan.find(i => i.id === id);
       if (!target) return;
 
-      const checkCashPelunasan = target.deskripsi_pengeluaran_cash && (target.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || target.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'));
-      const checkTrfPelunasan = target.deskripsi_pengeluaran_transfer && (target.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || target.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang'));
-      const isPelunasan = checkCashPelunasan || checkTrfPelunasan;
-
-      let listPiutangHTML = '<span class="detail-val">-</span>';
-
-      if (isPelunasan) {
-        let notaDitemukan = "";
-        const kataKunci = target.deskripsi_pengeluaran_cash || target.deskripsi_pengeluaran_transfer || "";
-        const cocokNota = kataKunci.match(/Nota\s([^\s]+)/);
-        if (cocokNota && cocokNota[1]) {
-          notaDitemukan = cocokNota[1];
-        }
-
-        if (notaDitemukan) {
-          const targetPiutangSpesifik = dataPiutang.filter(p => p.no_nota === notaDitemukan);
-          if (targetPiutangSpesifik.length > 0) {
-            listPiutangHTML = '';
-            targetPiutangSpesifik.forEach(p => {
-              listPiutangHTML += `<div style="font-size:12px; color:#eab308; margin-top:2px;">• ${p.nama_nasabah} (${formatRupiah(p.nominal)}) [${p.status}]</div>`;
-            });
-          }
-        }
+      let listPiutangHTML = '';
+      const targetPiutang = dataPiutang.filter(p => p.tanggal_piutang === target.tanggal);
+      if (targetPiutang.length > 0) {
+        targetPiutang.forEach(p => {
+          listPiutangHTML += `<div style="font-size:12px; color:#eab308; margin-top:2px;">• ${p.nama_nasabah} (${formatRupiah(p.nominal)}) [${p.status}]</div>`;
+        });
       } else {
-        const targetPiutang = dataPiutang.filter(p => p.tanggal_piutang === target.tanggal);
-        if (targetPiutang.length > 0) {
-          listPiutangHTML = '';
-          targetPiutang.forEach(p => {
-            listPiutangHTML += `<div style="font-size:12px; color:#eab308; margin-top:2px;">• ${p.nama_nasabah} (${formatRupiah(p.nominal)}) [${p.status}]</div>`;
-          });
-        }
+        listPiutangHTML = '<span class="detail-val">-</span>';
       }
 
       const body = document.getElementById('modal-details-body');
@@ -1754,6 +1738,10 @@
         status: 'Belum Lunas'
       };
 
+      if (!idPiutang) {
+        paketData.sisa_piutang = nominalInput;
+      }
+
       let hasil;
       if (idPiutang) {
         hasil = await clientSupabase.from('piutang').update(paketData).eq('id', idPiutang);
@@ -1830,23 +1818,17 @@
           groupedData[item.tanggal] = { omset: 0, out: 0 };
         }
 
-        const checkCashPelunasan = item.deskripsi_pengeluaran_cash && (item.deskripsi_pengeluaran_cash.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_cash.includes('Angsuran Piutang'));
-        const checkTrfPelunasan = item.deskripsi_pengeluaran_transfer && (item.deskripsi_pengeluaran_transfer.includes('Pelunasan Nota') || item.deskripsi_pengeluaran_transfer.includes('Angsuran Piutang'));
-        const isPelunasan = checkCashPelunasan || checkTrfPelunasan;
+        const cashMasuk = item.cash_aktual || 0;
+        const transferMasuk = item.transfer_aktual || 0;
+        groupedData[item.tanggal].omset += (cashMasuk + transferMasuk);
+        groupedData[item.tanggal].out += ((item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0));
+      });
 
-        const pengeluaran = (item.pengeluaran_cash || 0) + (item.pengeluaran_transfer || 0);
-
-        if (!isPelunasan) {
-          const cashMasuk = item.cash_aktual || 0;
-          const transferMasuk = item.transfer_aktual || 0;
-          const piutangHariIni = dataPiutang.filter(p => p.tanggal_piutang === item.tanggal).reduce((sum, p) => sum + (p.nominal || 0), 0);
-          groupedData[item.tanggal].omset += (cashMasuk + transferMasuk + piutangHariIni);
-        } else {
-          const piutangHariIni = dataPiutang.filter(p => p.tanggal_piutang === item.tanggal).reduce((sum, p) => sum + (p.nominal || 0), 0);
-          groupedData[item.tanggal].omset += piutangHariIni;
+      dataPiutang.forEach(item => {
+        if (!groupedData[item.tanggal_piutang]) {
+          groupedData[item.tanggal_piutang] = { omset: 0, out: 0 };
         }
-
-        groupedData[item.tanggal].out += pengeluaran;
+        groupedData[item.tanggal_piutang].omset += (item.nominal || 0);
       });
 
       const sortedDates = Object.keys(groupedData).sort().slice(-7);
