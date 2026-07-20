@@ -494,6 +494,12 @@
       border: 1px solid rgba(239, 68, 68, 0.2);
     }
 
+    .status-badge.angsuran {
+      background: rgba(234, 179, 8, 0.1);
+      color: var(--warning);
+      border: 1px solid rgba(234, 179, 8, 0.2);
+    }
+
     .status-badge.lunas {
       background: rgba(16, 185, 129, 0.1);
       color: var(--success);
@@ -936,7 +942,7 @@
               <input type="text" id="piutang-nasabah" placeholder="Masukkan nama lengkap nasabah" required>
             </div>
             <div class="form-group">
-              <label for="piutang-nominal">Besaran Piutang (Rp)</label>
+              <label for="piutang-nominal">Besaran Piutang Awal (Rp)</label>
               <input type="text" id="piutang-nominal" class="rupiah-mask" value="Rp 0" required>
             </div>
           </div>
@@ -1039,6 +1045,7 @@
         <input type="hidden" id="lunas-piutang-nominal">
         <input type="hidden" id="lunas-piutang-nota">
         <input type="hidden" id="lunas-piutang-nasabah">
+        <input type="hidden" id="lunas-piutang-sisa">
 
         <div class="form-group">
           <label for="lunas-tipe">Tipe Pembayaran</label>
@@ -1403,13 +1410,23 @@
         if (item.nama_nasabah.toLowerCase().includes(filter) || item.no_nota.toLowerCase().includes(filter)) {
           let statusLabel = item.status || 'Belum Lunas';
           let statusClass = 'belum-lunas';
+          let nominalColor = 'var(--danger)';
+          let extraInfo = '';
+
           if (item.status === 'Lunas') {
             statusClass = 'lunas';
+            nominalColor = 'var(--success)';
+          } else if (item.status && item.status.includes('Diangsur')) {
+            statusClass = 'angsuran';
+            nominalColor = 'var(--warning)';
+            if (item.sisa_piutang !== undefined && item.sisa_piutang !== null) {
+              extraInfo = `<br><span style="font-size:11px; opacity:0.8;">(Sisa: ${formatRupiah(item.sisa_piutang)})</span>`;
+            }
           }
 
           let actionButtons = '';
           if (item.status !== 'Lunas') {
-            actionButtons += `<button class="btn-table-lunas" onclick="bukaLunasModal(${item.id}, ${item.nominal}, '${item.no_nota}', '${item.nama_nasabah}')">Proses Bayar</button>`;
+            actionButtons += `<button class="btn-table-lunas" onclick="bukaLunasModal(${item.id}, ${item.nominal}, '${item.no_nota}', '${item.nama_nasabah}', ${item.sisa_piutang !== undefined && item.sisa_piutang !== null ? item.sisa_piutang : item.nominal})">Proses Bayar</button>`;
           }
           actionButtons += `<button class="btn-table-edit" onclick="pemicuEditPiutang(${item.id})">Edit</button>`;
           if (activeRole === 'master') {
@@ -1422,7 +1439,7 @@
               <td>${item.no_nota}</td>
               <td><strong>${item.nama_nasabah}</strong></td>
               <td style="color:#eab308;">${item.jatuh_tempo}</td>
-              <td style="color:var(--success); font-weight:600;">${formatRupiah(item.nominal || 0)}</td>
+              <td style="color:${nominalColor}; font-weight:600;">${formatRupiah(item.nominal || 0)}${extraInfo}</td>
               <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
               <td><span class="admin-badge">${item.admin || 'Cabang'}</span></td>
               <td><div class="action-btn-group">${actionButtons}</div></td>
@@ -1432,11 +1449,12 @@
       });
     }
 
-    window.bukaLunasModal = function (id, nominal, nota, nasabah) {
+    window.bukaLunasModal = function (id, nominal, nota, nasabah, sisaSekarang) {
       document.getElementById('lunas-piutang-id').value = id;
       document.getElementById('lunas-piutang-nominal').value = nominal;
       document.getElementById('lunas-piutang-nota').value = nota;
       document.getElementById('lunas-piutang-nasabah').value = nasabah;
+      document.getElementById('lunas-piutang-sisa').value = sisaSekarang;
 
       document.getElementById('lunas-tipe').value = 'PENUH';
       document.getElementById('container-nominal-angsuran').style.display = 'none';
@@ -1455,13 +1473,14 @@
       e.preventDefault();
 
       const id = document.getElementById('lunas-piutang-id').value;
-      const nominalTotal = parseFloat(document.getElementById('lunas-piutang-nominal').value) || 0;
+      const nominalAwal = parseFloat(document.getElementById('lunas-piutang-nominal').value) || 0;
+      const sisaLalu = parseFloat(document.getElementById('lunas-piutang-sisa').value) || nominalAwal;
       const tipe = document.getElementById('lunas-tipe').value;
       const metode = document.getElementById('lunas-metode').value;
       const customDesc = document.getElementById('lunas-desc').value.trim();
       const currentToday = new Date().toISOString().split('T')[0];
 
-      let danaMasuk = nominalTotal;
+      let danaMasuk = sisaLalu;
       let statusBaru = 'Lunas';
       let sisaPiutangBaru = 0;
 
@@ -1471,12 +1490,12 @@
           alert('Gagal! Nominal angsuran wajib diisi lebih dari Rp 0.');
           return;
         }
-        if (danaMasuk >= nominalTotal) {
+        if (danaMasuk >= sisaLalu) {
           statusBaru = 'Lunas';
           sisaPiutangBaru = 0;
         } else {
           statusBaru = 'Belum Lunas (Diangsur)';
-          sisaPiutangBaru = nominalTotal - danaMasuk;
+          sisaPiutangBaru = sisaLalu - danaMasuk;
         }
       }
 
@@ -1486,7 +1505,7 @@
 
       const resPiutang = await clientSupabase.from('piutang').update({
         status: statusBaru,
-        nominal: sisaPiutangBaru
+        sisa_piutang: sisaPiutangBaru
       }).eq('id', id);
 
       if (resPiutang.error) {
@@ -1757,15 +1776,21 @@
       btn.disabled = true;
       btn.innerText = "Memproses...";
 
+      const nominalInput = cleanRupiahValue(document.getElementById('piutang-nominal').value);
+
       const paketData = {
         tanggal_piutang: document.getElementById('piutang-tanggal').value,
         no_nota: document.getElementById('piutang-nota').value.trim(),
         jatuh_tempo: document.getElementById('piutang-tempo').value,
         nama_nasabah: document.getElementById('piutang-nasabah').value.trim(),
-        nominal: cleanRupiahValue(document.getElementById('piutang-nominal').value),
+        nominal: nominalInput,
         admin: activeName || activeAdmin,
         status: 'Belum Lunas'
       };
+
+      if (!idPiutang) {
+        paketData.sisa_piutang = nominalInput;
+      }
 
       let hasil;
       if (idPiutang) {
