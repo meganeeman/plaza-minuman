@@ -1000,7 +1000,7 @@
   <div id="lunasModal" class="custom-modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 style="margin-bottom:0; font-size:16px; color:var(--success);">Konfirmasi Pelunasan Nota</h2>
+        <h2 style="margin-bottom:0; font-size:16px; color:var(--success);">Proses Pembayaran Nota</h2>
         <button class="modal-close" onclick="closeLunasModal()">&times;</button>
       </div>
       <form id="form-konfirmasi-lunas">
@@ -1010,7 +1010,20 @@
         <input type="hidden" id="lunas-piutang-nasabah">
 
         <div class="form-group">
-          <label for="lunas-metode">Metode Pembayaran Pelunasan</label>
+          <label for="lunas-tipe">Tipe Pembayaran</label>
+          <select id="lunas-tipe" required>
+            <option value="PENUH">Bayar Penuh (Lunas)</option>
+            <option value="ANGSUR">Bayar Angsuran</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="container-nominal-angsuran" style="display:none;">
+          <label for="lunas-nominal-angsuran">Nominal Angsuran yang Dibayar (Rp)</label>
+          <input type="text" id="lunas-nominal-angsuran" class="rupiah-mask" value="Rp 0">
+        </div>
+
+        <div class="form-group">
+          <label for="lunas-metode">Metode Aliran Dana</label>
           <select id="lunas-metode" required>
             <option value="CASH">Uang CASH / Lapangan</option>
             <option value="TRANSFER">Via TRANSFER Bank (BRI)</option>
@@ -1022,7 +1035,7 @@
           <input type="text" id="lunas-desc" placeholder="Tambahkan catatan khusus jika diperlukan">
         </div>
 
-        <button type="submit" style="background:var(--success); color:#060913;">Konfirmasi Lunas & Sinkronisasi
+        <button type="submit" style="background:var(--success); color:#060913;">Konfirmasi Transaksi & Sinkronisasi
           Laporan</button>
       </form>
     </div>
@@ -1039,6 +1052,23 @@
     burgerTrigger.addEventListener('click', () => {
       burgerTrigger.classList.toggle('open-burger');
       navMenuContainer.classList.toggle('active-burger');
+    });
+
+    document.getElementById('lunas-tipe').addEventListener('change', function () {
+      const containerAngsuran = document.getElementById('container-nominal-angsuran');
+      const inputAngsuran = document.getElementById('lunas-nominal-angsuran');
+      const nota = document.getElementById('lunas-piutang-nota').value;
+      const nasabah = document.getElementById('lunas-piutang-nasabah').value;
+
+      if (this.value === 'ANGSUR') {
+        containerAngsuran.style.display = 'block';
+        inputAngsuran.required = true;
+        document.getElementById('lunas-desc').value = `Angsuran Piutang Nota ${nota} a.n ${nasabah}`;
+      } else {
+        containerAngsuran.style.display = 'none';
+        inputAngsuran.required = false;
+        document.getElementById('lunas-desc').value = `Pelunasan Nota ${nota} a.n ${nasabah}`;
+      }
     });
 
     document.querySelector('.subtitle span').innerText = activeName || activeAdmin;
@@ -1282,11 +1312,15 @@
 
       dataPiutang.forEach(item => {
         if (item.nama_nasabah.toLowerCase().includes(filter) || item.no_nota.toLowerCase().includes(filter)) {
-          const statusClass = item.status === 'Lunas' ? 'lunas' : 'belum-lunas';
+          let statusLabel = item.status || 'Belum Lunas';
+          let statusClass = 'belum-lunas';
+          if (item.status === 'Lunas') {
+            statusClass = 'lunas';
+          }
 
           let actionButtons = '';
           if (item.status !== 'Lunas') {
-            actionButtons += `<button class="btn-table-lunas" onclick="bukaLunasModal(${item.id}, ${item.nominal}, '${item.no_nota}', '${item.nama_nasabah}')">Tandai Lunas</button>`;
+            actionButtons += `<button class="btn-table-lunas" onclick="bukaLunasModal(${item.id}, ${item.nominal}, '${item.no_nota}', '${item.nama_nasabah}')">Proses Bayar</button>`;
           }
           actionButtons += `<button class="btn-table-edit" onclick="pemicuEditPiutang(${item.id})">Edit</button>`;
           if (activeRole === 'master') {
@@ -1300,7 +1334,7 @@
               <td><strong>${item.nama_nasabah}</strong></td>
               <td style="color:#eab308;">${item.jatuh_tempo}</td>
               <td style="color:var(--success); font-weight:600;">${formatRupiah(item.nominal || 0)}</td>
-              <td><span class="status-badge ${statusClass}">${item.status || 'Belum Lunas'}</span></td>
+              <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
               <td><span class="admin-badge">${item.admin || 'Cabang'}</span></td>
               <td><div class="action-btn-group">${actionButtons}</div></td>
             </tr>
@@ -1314,6 +1348,12 @@
       document.getElementById('lunas-piutang-nominal').value = nominal;
       document.getElementById('lunas-piutang-nota').value = nota;
       document.getElementById('lunas-piutang-nasabah').value = nasabah;
+
+      document.getElementById('lunas-tipe').value = 'PENUH';
+      document.getElementById('container-nominal-angsuran').style.display = 'none';
+      document.getElementById('lunas-nominal-angsuran').required = false;
+      document.getElementById('lunas-nominal-angsuran').value = 'Rp 0';
+
       document.getElementById('lunas-desc').value = `Pelunasan Nota ${nota} a.n ${nasabah}`;
       document.getElementById('lunasModal').style.display = 'flex';
     };
@@ -1326,28 +1366,51 @@
       e.preventDefault();
 
       const id = document.getElementById('lunas-piutang-id').value;
-      const nominal = parseFloat(document.getElementById('lunas-piutang-nominal').value) || 0;
+      const nominalTotal = parseFloat(document.getElementById('lunas-piutang-nominal').value) || 0;
+      const tipe = document.getElementById('lunas-tipe').value;
       const metode = document.getElementById('lunas-metode').value;
       const customDesc = document.getElementById('lunas-desc').value.trim();
       const currentToday = new Date().toISOString().split('T')[0];
+
+      let danaMasuk = nominalTotal;
+      let statusBaru = 'Lunas';
+      let sisaPiutangBaru = 0;
+
+      if (tipe === 'ANGSUR') {
+        danaMasuk = cleanRupiahValue(document.getElementById('lunas-nominal-angsuran').value);
+        if (danaMasuk <= 0) {
+          alert('Gagal! Nominal angsuran wajib diisi lebih dari Rp 0.');
+          return;
+        }
+        if (danaMasuk >= nominalTotal) {
+          statusBaru = 'Lunas';
+          sisaPiutangBaru = 0;
+        } else {
+          statusBaru = 'Belum Lunas (Diangsur)';
+          sisaPiutangBaru = nominalTotal - danaMasuk;
+        }
+      }
 
       const btn = this.querySelector('button[type="submit"]');
       btn.disabled = true;
       btn.innerText = "Memproses...";
 
-      const resPiutang = await clientSupabase.from('piutang').update({ status: 'Lunas' }).eq('id', id);
+      const resPiutang = await clientSupabase.from('piutang').update({
+        status: statusBaru,
+        nominal: sisaPiutangBaru
+      }).eq('id', id);
 
       if (resPiutang.error) {
-        alert('Gagal memperbarui status pelunasan.');
+        alert('Gagal memperbarui data piutang.');
         btn.disabled = false;
-        btn.innerText = "Konfirmasi Lunas & Sinkronisasi Laporan";
+        btn.innerText = "Konfirmasi Transaksi & Sinkronisasi Laporan";
         return;
       }
 
       const paketLaporan = {
         tanggal: currentToday,
-        cash_aktual: metode === 'CASH' ? nominal : 0,
-        transfer_aktual: metode === 'TRANSFER' ? nominal : 0,
+        cash_aktual: metode === 'CASH' ? danaMasuk : 0,
+        transfer_aktual: metode === 'TRANSFER' ? danaMasuk : 0,
         pengeluaran_cash: 0,
         deskripsi_pengeluaran_cash: metode === 'CASH' ? customDesc : '',
         pengeluaran_transfer: 0,
@@ -1358,14 +1421,14 @@
       const resLaporan = await clientSupabase.from('laporan_cabang').insert([paketLaporan]);
 
       btn.disabled = false;
-      btn.innerText = "Konfirmasi Lunas & Sinkronisasi Laporan";
+      btn.innerText = "Konfirmasi Transaksi & Sinkronisasi Laporan";
       closeLunasModal();
 
       if (!resLaporan.error) {
-        alert('Piutang diselesaikan dan otomatis tercatat di log laporan harian hari ini!');
+        alert(`Transaksi berhasil! Dana sebesar ${formatRupiah(danaMasuk)} otomatis tercatat di log laporan harian.`);
         fetchDataAll();
       } else {
-        alert('Status piutang lunas, namun gagal menyelaraskan ke log laporan harian.');
+        alert('Data piutang terpotong, namun gagal menyelaraskan transaksi ke log laporan harian.');
         fetchDataAll();
       }
     });
@@ -1589,7 +1652,8 @@
         jatuh_tempo: document.getElementById('piutang-tempo').value,
         nama_nasabah: document.getElementById('piutang-nasabah').value.trim(),
         nominal: cleanRupiahValue(document.getElementById('piutang-nominal').value),
-        admin: activeName || activeAdmin
+        admin: activeName || activeAdmin,
+        status: 'Belum Lunas'
       };
 
       let hasil;
