@@ -1289,7 +1289,12 @@
       const target = dataLaporan.find(i => i.id === id);
       if (!target) return;
       document.getElementById('edit-id-laporan').value = target.id;
-      document.getElementById('lap-tanggal').value = target.tanggal;
+
+      if (target.tanggal) {
+        const formattedDate = target.tanggal.split('T')[0];
+        document.getElementById('lap-tanggal').value = formattedDate;
+      }
+
       document.getElementById('lap-cash-aktual').value = formatRupiah(target.cash_aktual || 0);
       document.getElementById('lap-transfer-aktual').value = formatRupiah(target.transfer_aktual || 0);
       document.getElementById('lap-out-cash').value = formatRupiah(target.pengeluaran_cash || 0);
@@ -1329,7 +1334,7 @@
         const { error } = await clientSupabase.from('piutang').delete().eq('id', id);
         if (!error) {
           fetchDataAll();
-          alert('Data piutang berhasil dihapus!');
+          alert('Data piutang berhasil deleted!');
         }
       }
     };
@@ -1401,6 +1406,10 @@
         this.reset();
         document.getElementById('edit-id-laporan').value = '';
         document.querySelectorAll('.rupiah-mask').forEach(i => i.value = 'Rp 0');
+
+        const tglStr = new Date().toISOString().split('T')[0];
+        document.getElementById('lap-tanggal').value = tglStr;
+
         fetchDataAll();
         alert('Laporan harian berhasil disimpan!');
       } else {
@@ -1438,6 +1447,11 @@
         this.reset();
         document.getElementById('edit-id-piutang').value = '';
         document.querySelectorAll('.rupiah-mask').forEach(i => i.value = 'Rp 0');
+
+        const tglStr = new Date().toISOString().split('T')[0];
+        document.getElementById('piutang-tanggal').value = tglStr;
+        document.getElementById('piutang-tempo').value = tglStr;
+
         fetchDataAll();
         alert('Data piutang nasabah berhasil disimpan!');
       } else {
@@ -1456,7 +1470,7 @@
 
       const paketData = {
         tanggal_setor: document.getElementById('setor-tanggal').value,
-        jumlah_setoran: cleanRupiahValue(document.getElementById('setor-jumlah').value),
+        shadow_setoran: cleanRupiahValue(document.getElementById('setor-jumlah').value),
         admin: activeName || activeAdmin
       };
 
@@ -1474,6 +1488,10 @@
         this.reset();
         document.getElementById('edit-id-setor').value = '';
         document.getElementById('setor-jumlah').value = 'Rp 0';
+
+        const tglStr = new Date().toISOString().split('T')[0];
+        document.getElementById('setor-tanggal').value = tglStr;
+
         fetchDataAll();
         alert('Data setoran bank berhasil diproses!');
       } else {
