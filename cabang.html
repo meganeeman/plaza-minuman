@@ -366,6 +366,51 @@
       margin-bottom: 10px;
     }
 
+    .out-row-item {
+      display: grid;
+      grid-template-columns: 2fr 1fr auto;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .btn-remove-row {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: 8px;
+      width: 42px;
+      height: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s;
+    }
+
+    .btn-remove-row:hover {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .btn-add-row {
+      background: rgba(56, 189, 248, 0.1);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn-add-row:hover {
+      background: var(--accent);
+      color: var(--bg-primary);
+    }
+
     .divider-line {
       height: 1px;
       background: var(--border);
@@ -867,6 +912,15 @@
         gap: 8px;
         text-align: center;
       }
+
+      .out-row-item {
+        grid-template-columns: 1fr;
+      }
+
+      .btn-remove-row {
+        width: 100%;
+        height: 36px;
+      }
     }
   </style>
 </head>
@@ -1030,25 +1084,30 @@
           <div class="divider-line"></div>
           <h3 style="font-size:14px; color:var(--danger); margin-bottom:15px;">Perincian Dana Pengeluaran Toko</h3>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label for="lap-out-cash">Nominal Pengeluaran via CASH (Rp)</label>
-              <input type="text" id="lap-out-cash" class="rupiah-mask" value="Rp 0" required>
+          <div class="form-group">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <label style="margin-bottom:0; font-weight:600; color:var(--text-main);">Pengeluaran CASH (Tunai)</label>
+              <button type="button" class="btn-add-row" onclick="addOutRow('cash')">+ Tambah Baris Cash</button>
             </div>
-            <div class="form-group">
-              <label for="lap-desc-cash">Keterangan Pengeluaran CASH (Wajib jika diisi)</label>
-              <input type="text" id="lap-desc-cash" placeholder="Contoh: 200k uang jalan supir kirim barang">
+            <div id="container-out-cash"></div>
+            <div style="text-align:right; font-size:12px; color:var(--text-muted); margin-top:4px;">
+              Subtotal Pengeluaran Cash: <span id="label-subtotal-cash" style="color:var(--danger); font-weight:600;">Rp
+                0</span>
             </div>
           </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label for="lap-out-transfer">Nominal Pengeluaran via TRANSFER (Rp)</label>
-              <input type="text" id="lap-out-transfer" class="rupiah-mask" value="Rp 0" required>
+          <div class="divider-line" style="margin:15px 0;"></div>
+
+          <div class="form-group">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <label style="margin-bottom:0; font-weight:600; color:var(--text-main);">Pengeluaran TRANSFER
+                (Non-Tunai)</label>
+              <button type="button" class="btn-add-row" onclick="addOutRow('transfer')">+ Tambah Baris Transfer</button>
             </div>
-            <div class="form-group">
-              <label for="lap-desc-transfer">Keterangan Pengeluaran TRANSFER (Wajib jika diisi)</label>
-              <input type="text" id="lap-desc-transfer" placeholder="Contoh: Bayar token listrik via m-banking">
+            <div id="container-out-transfer"></div>
+            <div style="text-align:right; font-size:12px; color:var(--text-muted); margin-top:4px;">
+              Subtotal Pengeluaran Transfer: <span id="label-subtotal-transfer"
+                style="color:var(--danger); font-weight:600;">Rp 0</span>
             </div>
           </div>
 
@@ -1331,6 +1390,8 @@
         const fallbackPage = document.getElementById('page-input-laporan');
         if (fallbackPage) fallbackPage.classList.add('active-page');
       }
+
+      resetOutRows();
     });
 
     function populateMonthFilter() {
@@ -1414,7 +1475,7 @@
       return 'Rp ' + parseInt(num).toLocaleString('id-ID');
     };
 
-    document.querySelectorAll('.rupiah-mask').forEach(input => {
+    function attachRupiahMask(input) {
       input.addEventListener('focus', function () { if (this.value === 'Rp 0') this.value = ''; });
       input.addEventListener('blur', function () { if (this.value === '') this.value = 'Rp 0'; });
       input.addEventListener('input', function () {
@@ -1422,8 +1483,65 @@
         const oldLen = this.value.length;
         this.value = formatInputRupiah(this.value);
         this.setSelectionRange(pos + (this.value.length - oldLen), pos + (this.value.length - oldLen));
+        hitungSubtotalOut();
       });
-    });
+    }
+
+    document.querySelectorAll('.rupiah-mask').forEach(input => attachRupiahMask(input));
+
+    function addOutRow(type, descVal = '', amountVal = 0) {
+      const container = document.getElementById(type === 'cash' ? 'container-out-cash' : 'container-out-transfer');
+      const div = document.createElement('div');
+      div.className = `out-row-item ${type === 'cash' ? 'item-out-cash' : 'item-out-transfer'}`;
+
+      const placeholderText = type === 'cash' ? 'Contoh: 200k uang jalan supir' : 'Contoh: Bayar token listrik m-banking';
+
+      div.innerHTML = `
+        <input type="text" class="out-desc" placeholder="${placeholderText}" value="${descVal}">
+        <input type="text" class="out-amount rupiah-mask" value="${formatRupiah(amountVal)}">
+        <button type="button" class="btn-remove-row" onclick="removeOutRow(this, '${type}')">&times;</button>
+      `;
+
+      container.appendChild(div);
+      attachRupiahMask(div.querySelector('.out-amount'));
+      hitungSubtotalOut();
+    }
+
+    function removeOutRow(btn, type) {
+      const container = document.getElementById(type === 'cash' ? 'container-out-cash' : 'container-out-transfer');
+      if (container.children.length > 1) {
+        btn.parentElement.remove();
+        hitungSubtotalOut();
+      } else {
+        alert('Minimal harus ada 1 baris pengeluaran!');
+      }
+    }
+
+    function resetOutRows() {
+      document.getElementById('container-out-cash').innerHTML = '';
+      document.getElementById('container-out-transfer').innerHTML = '';
+      addOutRow('cash');
+      addOutRow('transfer');
+      hitungSubtotalOut();
+    }
+
+    function hitungSubtotalOut() {
+      let totalCash = 0;
+      let totalTrf = 0;
+
+      document.querySelectorAll('#container-out-cash .out-amount').forEach(inp => {
+        totalCash += cleanRupiahValue(inp.value);
+      });
+
+      document.querySelectorAll('#container-out-transfer .out-amount').forEach(inp => {
+        totalTrf += cleanRupiahValue(inp.value);
+      });
+
+      document.getElementById('label-subtotal-cash').innerText = formatRupiah(totalCash);
+      document.getElementById('label-subtotal-transfer').innerText = formatRupiah(totalTrf);
+
+      return { totalCash, totalTrf };
+    }
 
     async function fetchDataAll() {
       try {
@@ -1832,8 +1950,6 @@
       let listArusAngsuranHTML = '';
       const targetAngsuranMasuk = dataAngsuran.filter(a => a.tanggal === target.tanggal);
       if (targetAngsuranMasuk.length > 0) {
-        const globalCounters = {};
-
         targetAngsuranMasuk.forEach(angsuranRow => {
           const infoPiutangInduk = dataPiutang.find(p => p.id === angsuranRow.piutang_id);
           const namaNasabah = infoPiutangInduk ? infoPiutangInduk.nama_nasabah : 'Nasabah';
@@ -1864,8 +1980,6 @@
       } else {
         listArusAngsuranHTML = '<span class="detail-val">-</span>';
       }
-
-      const totalOutRow = (target.pengeluaran_cash || 0) + (target.pengeluaran_transfer || 0);
 
       const body = document.getElementById('modal-details-body');
       body.innerHTML = `
@@ -1922,10 +2036,45 @@
 
       document.getElementById('lap-cash-aktual').value = formatRupiah(target.cash_aktual || 0);
       document.getElementById('lap-transfer-aktual').value = formatRupiah(target.transfer_aktual || 0);
-      document.getElementById('lap-out-cash').value = formatRupiah(target.pengeluaran_cash || 0);
-      document.getElementById('lap-desc-cash').value = target.deskripsi_pengeluaran_cash || '';
-      document.getElementById('lap-out-transfer').value = formatRupiah(target.pengeluaran_transfer || 0);
-      document.getElementById('lap-desc-transfer').value = target.deskripsi_pengeluaran_transfer || '';
+
+      document.getElementById('container-out-cash').innerHTML = '';
+      if (target.deskripsi_pengeluaran_cash) {
+        const parts = target.deskripsi_pengeluaran_cash.split(';');
+        parts.forEach(p => {
+          const match = p.match(/(.*)\s\(Rp\s([\d\.]+)\)/);
+          if (match) {
+            const desc = match[1].trim();
+            const amt = parseFloat(match[2].replace(/\./g, '')) || 0;
+            addOutRow('cash', desc, amt);
+          } else if (p.trim() !== '') {
+            addOutRow('cash', p.trim(), target.pengeluaran_cash || 0);
+          }
+        });
+      }
+      if (document.getElementById('container-out-cash').children.length === 0) {
+        addOutRow('cash', '', target.pengeluaran_cash || 0);
+      }
+
+      document.getElementById('container-out-transfer').innerHTML = '';
+      if (target.deskripsi_pengeluaran_transfer) {
+        const parts = target.deskripsi_pengeluaran_transfer.split(';');
+        parts.forEach(p => {
+          const match = p.match(/(.*)\s\(Rp\s([\d\.]+)\)/);
+          if (match) {
+            const desc = match[1].trim();
+            const amt = parseFloat(match[2].replace(/\./g, '')) || 0;
+            addOutRow('transfer', desc, amt);
+          } else if (p.trim() !== '') {
+            addOutRow('transfer', p.trim(), target.pengeluaran_transfer || 0);
+          }
+        });
+      }
+      if (document.getElementById('container-out-transfer').children.length === 0) {
+        addOutRow('transfer', '', target.pengeluaran_transfer || 0);
+      }
+
+      hitungSubtotalOut();
+
       document.getElementById('lap-nota').value = target.nota || '';
       document.getElementById('btn-submit-laporan').innerText = "Perbarui Laporan Harian";
       document.getElementById('page-input-laporan').scrollIntoView({ behavior: 'smooth' });
@@ -1987,19 +2136,38 @@
     document.getElementById('form-laporan-harian').addEventListener('submit', async function (e) {
       e.preventDefault();
       const idLaporan = document.getElementById('edit-id-laporan').value;
-      const outCash = cleanRupiahValue(document.getElementById('lap-out-cash').value);
-      const descCash = document.getElementById('lap-desc-cash').value.trim();
-      const outTrf = cleanRupiahValue(document.getElementById('lap-out-transfer').value);
-      const descTrf = document.getElementById('lap-desc-transfer').value.trim();
 
-      if (outCash > 0 && descCash === '') {
-        alert('Gagal! Anda wajib mengisi Keterangan Pengeluaran CASH jika nominal pengeluaran cash diisi.');
+      const { totalCash, totalTrf } = hitungSubtotalOut();
+
+      let descCashList = [];
+      let validCash = true;
+      document.querySelectorAll('#container-out-cash .out-row-item').forEach(item => {
+        const desc = item.querySelector('.out-desc').value.trim();
+        const amt = cleanRupiahValue(item.querySelector('.out-amount').value);
+        if (amt > 0 && desc === '') validCash = false;
+        if (amt > 0 && desc !== '') descCashList.push(`${desc} (Rp ${amt.toLocaleString('id-ID')})`);
+      });
+
+      let descTrfList = [];
+      let validTrf = true;
+      document.querySelectorAll('#container-out-transfer .out-row-item').forEach(item => {
+        const desc = item.querySelector('.out-desc').value.trim();
+        const amt = cleanRupiahValue(item.querySelector('.out-amount').value);
+        if (amt > 0 && desc === '') validTrf = false;
+        if (amt > 0 && desc !== '') descTrfList.push(`${desc} (Rp ${amt.toLocaleString('id-ID')})`);
+      });
+
+      if (!validCash) {
+        alert('Gagal! Anda wajib mengisi Keterangan Pengeluaran CASH untuk setiap baris pengeluaran yang diisi nominalnya.');
         return;
       }
-      if (outTrf > 0 && descTrf === '') {
-        alert('Gagal! Anda wajib mengisi Keterangan Pengeluaran TRANSFER jika nominal pengeluaran transfer diisi.');
+      if (!validTrf) {
+        alert('Gagal! Anda wajib mengisi Keterangan Pengeluaran TRANSFER untuk setiap baris pengeluaran yang diisi nominalnya.');
         return;
       }
+
+      const descCash = descCashList.join('; ');
+      const descTrf = descTrfList.join('; ');
 
       const btn = document.getElementById('btn-submit-laporan');
       btn.disabled = true;
@@ -2009,9 +2177,9 @@
         tanggal: document.getElementById('lap-tanggal').value,
         cash_aktual: cleanRupiahValue(document.getElementById('lap-cash-aktual').value),
         transfer_aktual: cleanRupiahValue(document.getElementById('lap-transfer-aktual').value),
-        pengeluaran_cash: outCash,
+        pengeluaran_cash: totalCash,
         deskripsi_pengeluaran_cash: descCash,
-        pengeluaran_transfer: outTrf,
+        pengeluaran_transfer: totalTrf,
         deskripsi_pengeluaran_transfer: descTrf,
         nota: document.getElementById('lap-nota').value,
         admin: activeName || activeAdmin
@@ -2031,6 +2199,8 @@
         this.reset();
         document.getElementById('edit-id-laporan').value = '';
         document.querySelectorAll('.rupiah-mask').forEach(i => i.value = 'Rp 0');
+
+        resetOutRows();
 
         const tglStr = new Date().toISOString().split('T')[0];
         document.getElementById('lap-tanggal').value = tglStr;
