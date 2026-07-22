@@ -555,6 +555,26 @@
       border: 1px solid rgba(16, 185, 129, 0.2);
     }
 
+    .log-badge-edit {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+      background: rgba(234, 179, 8, 0.1);
+      color: var(--warning);
+      border: 1px solid rgba(234, 179, 8, 0.2);
+    }
+
+    .log-badge-hapus {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
     .action-btn-group {
       display: flex;
       gap: 6px;
@@ -763,6 +783,7 @@
       .search-container-flex,
       .action-btn-group,
       #master-panel-saldo,
+      #card-activity-logs,
       .qol-footer,
       .print-hide,
       th:nth-child(1),
@@ -1048,6 +1069,33 @@
               <tbody id="mini-log-body"></tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      <div class="card print-hide" id="card-activity-logs" style="display:none;">
+        <div class="table-header-flex">
+          <div>
+            <h2>Riwayat Perubahan & Penghapusan Data (Audit Log)</h2>
+            <div class="subtitle" style="font-size:12px; margin-top:2px;">Rekam jejak transparan setiap aktivitas
+              pengubahan dan penghapusan data oleh petugas.</div>
+          </div>
+          <div class="search-container-flex">
+            <input type="text" id="search-activity-log" class="search-input" placeholder="Cari admin/modul/detail...">
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table id="table-activity-logs">
+            <thead>
+              <tr>
+                <th>Waktu Kejadian</th>
+                <th>Petugas / Admin</th>
+                <th>Modul</th>
+                <th>Aksi</th>
+                <th>Detail Catatan Perubahan</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -1372,6 +1420,7 @@
 
       if (activeRole === 'master') {
         document.getElementById('master-panel-saldo').style.display = 'block';
+        document.getElementById('card-activity-logs').style.display = 'block';
         document.getElementById('btn-bulk-delete-laporan').style.display = 'block';
         document.getElementById('th-bulk-laporan').style.display = 'table-cell';
 
@@ -1461,6 +1510,7 @@
     let dataSetor = [];
     let dataPiutang = [];
     let dataAngsuran = [];
+    let dataActivityLogs = [];
     let saldoAwalBankGlobal = 0;
     let cChart = null;
 
@@ -1543,6 +1593,19 @@
       return { totalCash, totalTrf };
     }
 
+    async function catatActivityLog(aksi, modul, detail) {
+      try {
+        await clientSupabase.from('activity_logs').insert([{
+          admin: activeName || activeAdmin,
+          aksi: aksi,
+          modul: modul,
+          detail_perubahan: detail
+        }]);
+      } catch (err) {
+        console.error("Gagal merekam activity log:", err);
+      }
+    }
+
     async function fetchDataAll() {
       try {
         const { data: configData } = await clientSupabase.from('konfigurasi_cabang').select('saldo_awal_bank').eq('id', 1).single();
@@ -1556,6 +1619,11 @@
         const resPiutang = await clientSupabase.from('piutang').select('*').order('tanggal_piutang', { ascending: false });
         const resAngsuran = await clientSupabase.from('history_angsuran').select('*').order('id', { ascending: true });
 
+        if (activeRole === 'master') {
+          const resLogs = await clientSupabase.from('activity_logs').select('*').order('tanggal_aksi', { ascending: false });
+          if (!resLogs.error) dataActivityLogs = resLogs.data || [];
+        }
+
         if (!resLap.error) dataLaporan = resLap.data || [];
         if (!resSetor.error) dataSetor = resSetor.data || [];
         if (!resPiutang.error) dataPiutang = resPiutang.data || [];
@@ -1565,6 +1633,7 @@
         renderLaporanTable();
         renderPiutangTable();
         renderSetorTable();
+        if (activeRole === 'master') renderActivityLogsTable();
         checkPiutangJatuhTempoAlerts();
         initChartTren();
       } catch (err) {
@@ -1754,6 +1823,7 @@
 
         const { error } = await clientSupabase.from('laporan_cabang').delete().in('id', idsToDelete);
         if (!error) {
+          await catatActivityLog('HAPUS', 'LAPORAN_HARIAN', `Menghapus massal ${idsToDelete.length} data laporan harian (ID: ${idsToDelete.join(', ')})`);
           document.getElementById('check-all-laporan').checked = false;
           fetchDataAll();
           alert('Data pilihan berhasil dihapus secara massal!');
@@ -1905,6 +1975,7 @@
       closeLunasModal();
 
       if (!resHistori.error) {
+        await catatActivityLog('EDIT', 'PIUTANG', `Pembayaran piutang (${tipe}): ${customDesc} sebesar ${formatRupiah(danaMasuk)}`);
         alert(`Sukses! Angsuran ${formatRupiah(danaMasuk)} tersimpan di histori tanpa mengotori log harian.`);
         fetchDataAll();
       } else {
@@ -1931,6 +2002,41 @@
           </tr>
         `;
       });
+    }
+
+    function renderActivityLogsTable() {
+      const searchVal = document.getElementById('search-activity-log') ? document.getElementById('search-activity-log').value.toLowerCase() : '';
+      const tbody = document.querySelector('#table-activity-logs tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      dataActivityLogs.forEach(log => {
+        const adminName = (log.admin || '-').toLowerCase();
+        const modulName = (log.modul || '-').toLowerCase();
+        const detailText = (log.detail_perubahan || '-').toLowerCase();
+
+        if (adminName.includes(searchVal) || modulName.includes(searchVal) || detailText.includes(searchVal)) {
+          let badgeClass = 'log-badge-edit';
+          if (log.aksi === 'HAPUS') badgeClass = 'log-badge-hapus';
+
+          const tglObj = new Date(log.tanggal_aksi);
+          const tglFormatted = tglObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + tglObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+
+          tbody.innerHTML += `
+            <tr>
+              <td style="font-size:12px; color:var(--text-muted);">${tglFormatted}</td>
+              <td><span class="admin-badge">${log.admin || 'Pusat'}</span></td>
+              <td><strong style="font-size:12px; color:var(--accent);">${log.modul}</strong></td>
+              <td><span class="${badgeClass}">${log.aksi}</span></td>
+              <td style="font-size:13px; color:var(--text-main);">${log.detail_perubahan || '-'}</td>
+            </tr>
+          `;
+        }
+      });
+    }
+
+    if (document.getElementById('search-activity-log')) {
+      document.getElementById('search-activity-log').addEventListener('input', renderActivityLogsTable);
     }
 
     window.bukaDetailModal = function (id) {
@@ -2017,6 +2123,7 @@
       });
 
       if (!error) {
+        await catatActivityLog('EDIT', 'KONFIGURASI', `Memperbarui saldo awal bank menjadi ${formatRupiah(newAmt)}`);
         alert('Saldo awal buku resmi berhasil diperbarui oleh Master!');
         await fetchDataAll();
       } else {
@@ -2082,8 +2189,10 @@
 
     window.hapusLaporanCabang = async function (id) {
       if (confirm('Apakah kamu yakin ingin menghapus data laporan harian ini?')) {
+        const target = dataLaporan.find(i => i.id === id);
         const { error } = await clientSupabase.from('laporan_cabang').delete().eq('id', id);
         if (!error) {
+          await catatActivityLog('HAPUS', 'LAPORAN_HARIAN', `Menghapus data laporan harian tanggal ${target?.tanggal || id}`);
           fetchDataAll();
           alert('Data laporan berhasil dihapus!');
         }
@@ -2105,10 +2214,12 @@
 
     window.hapusPiutang = async function (id) {
       if (confirm('Apakah kamu yakin ingin menghapus data piutang ini?')) {
+        const target = dataPiutang.find(i => i.id === id);
         const { error } = await clientSupabase.from('piutang').delete().eq('id', id);
         if (!error) {
+          await catatActivityLog('HAPUS', 'PIUTANG', `Menghapus data piutang Nota ${target?.no_nota || id} a.n ${target?.nama_nasabah || '-'}`);
           fetchDataAll();
-          alert('Data piutang berhasil deleted!');
+          alert('Data piutang berhasil dihapus!');
         }
       }
     };
@@ -2125,8 +2236,10 @@
 
     window.hapusSetorBank = async function (id) {
       if (confirm('Apakah kamu yakin ingin menghapus data setoran bank ini?')) {
+        const target = dataSetor.find(i => i.id === id);
         const { error } = await clientSupabase.from('setor_bank_cabang').delete().eq('id', id);
         if (!error) {
+          await catatActivityLog('HAPUS', 'SETOR_BANK', `Menghapus data setoran bank tanggal ${target?.tanggal_setor || id} sebesar ${formatRupiah(target?.jumlah_setoran || 0)}`);
           fetchDataAll();
           alert('Data setoran bank berhasil dihapus!');
         }
@@ -2196,6 +2309,10 @@
       btn.innerText = "Simpan Laporan Harian";
 
       if (!hasil.error) {
+        if (idLaporan) {
+          await catatActivityLog('EDIT', 'LAPORAN_HARIAN', `Mengubah data laporan harian tanggal ${paketData.tanggal}`);
+        }
+
         this.reset();
         document.getElementById('edit-id-laporan').value = '';
         document.querySelectorAll('.rupiah-mask').forEach(i => i.value = 'Rp 0');
@@ -2246,6 +2363,10 @@
       btn.innerText = "Simpan Data Piutang";
 
       if (!hasil.error) {
+        if (idPiutang) {
+          await catatActivityLog('EDIT', 'PIUTANG', `Mengubah rincian piutang Nota ${paketData.no_nota} a.n ${paketData.nama_nasabah}`);
+        }
+
         this.reset();
         document.getElementById('edit-id-piutang').value = '';
         document.querySelectorAll('.rupiah-mask').forEach(i => i.value = 'Rp 0');
@@ -2287,6 +2408,10 @@
       btn.innerText = "Konfirmasi Setor Bank & Pengenolan Cash";
 
       if (!hasil.error) {
+        if (idSetor) {
+          await catatActivityLog('EDIT', 'SETOR_BANK', `Mengubah data setoran bank tanggal ${paketData.tanggal_setor} menjadi ${formatRupiah(paketData.jumlah_setoran)}`);
+        }
+
         this.reset();
         document.getElementById('edit-id-setor').value = '';
         document.getElementById('setor-jumlah').value = 'Rp 0';
