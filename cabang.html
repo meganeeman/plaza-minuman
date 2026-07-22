@@ -628,6 +628,12 @@
       color: var(--text-main);
     }
 
+    .lock-badge {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
     .period-table {
       width: 100%;
       border-collapse: collapse;
@@ -953,7 +959,7 @@
     const activeRole = localStorage.getItem('admin_role');
     const activeName = localStorage.getItem('admin_name');
 
-    if (!activeAdmin || (activeRole !== 'admin_cabang' && activeRole !== 'master')) {
+    if (!activeAdmin || (activeRole !== 'admin_cabang' && activeRole !== 'master' && activeRole !== 'owner')) {
       window.location.href = 'login.html';
     }
   </script>
@@ -1109,7 +1115,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="card-form-laporan">
         <form id="form-laporan-harian">
           <input type="hidden" id="edit-id-laporan">
 
@@ -1213,7 +1219,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="card-form-piutang">
         <form id="form-piutang">
           <input type="hidden" id="edit-id-piutang">
           <div class="form-row">
@@ -1280,7 +1286,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="card-form-setor">
         <form id="form-setor-bank">
           <input type="hidden" id="edit-id-setor">
           <div class="form-row">
@@ -1413,12 +1419,34 @@
     });
 
     document.querySelector('.subtitle span').innerText = activeName || activeAdmin;
-    document.getElementById('qol-footer-admin-info').innerText = `Petugas: ${activeName || activeAdmin} (${activeRole === 'master' ? 'Master Pusat' : 'Admin Cabang'})`;
+    document.getElementById('qol-footer-admin-info').innerText = `Petugas: ${activeName || activeAdmin} (${activeRole === 'master' ? 'Master Pusat' : activeRole === 'owner' ? 'Owner (Read Only)' : 'Admin Cabang'})`;
 
     window.addEventListener('DOMContentLoaded', () => {
       populateMonthFilter();
 
-      if (activeRole === 'master') {
+      if (activeRole === 'owner') {
+        const cardFormLap = document.getElementById('card-form-laporan');
+        const cardFormPiu = document.getElementById('card-form-piutang');
+        const cardFormSet = document.getElementById('card-form-setor');
+        if (cardFormLap) cardFormLap.style.display = 'none';
+        if (cardFormPiu) cardFormPiu.style.display = 'none';
+        if (cardFormSet) cardFormSet.style.display = 'none';
+
+        const infoMsg = '<div style="background:rgba(56,189,248,0.1); padding:15px; border-radius:10px; color:#38bdf8; margin-bottom:20px; font-size:14px; text-align:center; border:1px solid rgba(56,189,248,0.2);">Mode Peninjauan: Anda masuk sebagai Owner (Akses Baca Saja)</div>';
+
+        document.getElementById('page-overview').insertAdjacentHTML('afterbegin', infoMsg);
+        document.getElementById('page-input-laporan').insertAdjacentHTML('afterbegin', infoMsg);
+        document.getElementById('page-piutang').insertAdjacentHTML('afterbegin', infoMsg);
+        document.getElementById('page-setor-bank').insertAdjacentHTML('afterbegin', infoMsg);
+
+        document.getElementById('card-activity-logs').style.display = 'block';
+
+        const backBtn = `<li><a href="index.html" class="hub-btn">Kembali Ke Hub</a></li>`;
+        document.querySelector('.nav-menu').insertAdjacentHTML('beforeend', backBtn);
+        const logoutTrigger = document.getElementById('logout-trigger-item');
+        if (logoutTrigger) logoutTrigger.style.display = 'none';
+
+      } else if (activeRole === 'master') {
         document.getElementById('master-panel-saldo').style.display = 'block';
         document.getElementById('card-activity-logs').style.display = 'block';
         document.getElementById('btn-bulk-delete-laporan').style.display = 'block';
@@ -1619,7 +1647,7 @@
         const resPiutang = await clientSupabase.from('piutang').select('*').order('tanggal_piutang', { ascending: false });
         const resAngsuran = await clientSupabase.from('history_angsuran').select('*').order('id', { ascending: true });
 
-        if (activeRole === 'master') {
+        if (activeRole === 'master' || activeRole === 'owner') {
           const resLogs = await clientSupabase.from('activity_logs').select('*').order('tanggal_aksi', { ascending: false });
           if (!resLogs.error) dataActivityLogs = resLogs.data || [];
         }
@@ -1633,7 +1661,7 @@
         renderLaporanTable();
         renderPiutangTable();
         renderSetorTable();
-        if (activeRole === 'master') renderActivityLogsTable();
+        if (activeRole === 'master' || activeRole === 'owner') renderActivityLogsTable();
         checkPiutangJatuhTempoAlerts();
         initChartTren();
       } catch (err) {
@@ -1783,12 +1811,17 @@
         const dateObj = new Date(item.tanggal + 'T00:00:00');
         const dateStringFormatted = dateObj.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-        let actionButtons = `<button class="btn-table-edit" onclick="event.stopPropagation(); pemicuEditLaporan(${item.id})">Edit</button>`;
+        let actionButtons = '';
         let checkboxCell = '';
 
+        if (activeRole === 'master' || activeRole === 'admin_cabang') {
+          actionButtons += `<button class="btn-table-edit" onclick="event.stopPropagation(); pemicuEditLaporan(${item.id})">Edit</button>`;
+        }
         if (activeRole === 'master') {
           actionButtons += `<button class="btn-table-delete" onclick="event.stopPropagation(); hapusLaporanCabang(${item.id})">Hapus</button>`;
           checkboxCell = `<td onclick="event.stopPropagation();"><input type="checkbox" class="check-item-laporan" value="${item.id}"></td>`;
+        } else if (activeRole === 'owner') {
+          actionButtons = '<span class="lock-badge">Terunci</span>';
         }
 
         tbody.innerHTML += `
@@ -1812,6 +1845,7 @@
     });
 
     document.getElementById('btn-bulk-delete-laporan').addEventListener('click', async function () {
+      if (activeRole !== 'master') return;
       const selectedBoxes = document.querySelectorAll('.check-item-laporan:checked');
       if (selectedBoxes.length === 0) {
         alert('Pilih minimal satu data laporan yang ingin dihapus massal!');
@@ -1869,12 +1903,16 @@
           }
 
           let actionButtons = '';
-          if (item.status !== 'Lunas') {
-            actionButtons += `<button class="btn-table-lunas" onclick="bukaLunasModal(${item.id}, ${item.nominal}, '${item.no_nota}', '${item.nama_nasabah}', ${item.sisa_piutang !== undefined && item.sisa_piutang !== null ? item.sisa_piutang : item.nominal})">Proses Bayar</button>`;
-          }
-          actionButtons += `<button class="btn-table-edit" onclick="pemicuEditPiutang(${item.id})">Edit</button>`;
-          if (activeRole === 'master') {
-            actionButtons += `<button class="btn-table-delete" onclick="hapusPiutang(${item.id})">Hapus</button>`;
+          if (activeRole === 'master' || activeRole === 'admin_cabang') {
+            if (item.status !== 'Lunas') {
+              actionButtons += `<button class="btn-table-lunas" onclick="bukaLunasModal(${item.id}, ${item.nominal}, '${item.no_nota}', '${item.nama_nasabah}', ${item.sisa_piutang !== undefined && item.sisa_piutang !== null ? item.sisa_piutang : item.nominal})">Proses Bayar</button>`;
+            }
+            actionButtons += `<button class="btn-table-edit" onclick="pemicuEditPiutang(${item.id})">Edit</button>`;
+            if (activeRole === 'master') {
+              actionButtons += `<button class="btn-table-delete" onclick="hapusPiutang(${item.id})">Hapus</button>`;
+            }
+          } else if (activeRole === 'owner') {
+            actionButtons = '<span class="lock-badge">Terunci</span>';
           }
 
           tbody.innerHTML += `
@@ -1894,6 +1932,7 @@
     }
 
     window.bukaLunasModal = function (id, nominal, nota, nasabah, sisaSekarang) {
+      if (activeRole === 'owner') return;
       document.getElementById('lunas-piutang-id').value = id;
       document.getElementById('lunas-piutang-nominal').value = nominal;
       document.getElementById('lunas-piutang-nota').value = nota;
@@ -1915,6 +1954,7 @@
 
     document.getElementById('form-konfirmasi-lunas').addEventListener('submit', async function (e) {
       e.preventDefault();
+      if (activeRole === 'owner') return;
 
       const id = document.getElementById('lunas-piutang-id').value;
       const nominalAwal = parseFloat(document.getElementById('lunas-piutang-nominal').value) || 0;
@@ -1988,9 +2028,14 @@
       const tbody = document.querySelector('#table-setor tbody');
       tbody.innerHTML = '';
       dataSetor.forEach(item => {
-        let actionButtons = `<button class="btn-table-edit" onclick="pemicuEditSetor(${item.id})">Edit</button>`;
-        if (activeRole === 'master') {
-          actionButtons += `<button class="btn-table-delete" onclick="hapusSetorBank(${item.id})">Hapus</button>`;
+        let actionButtons = '';
+        if (activeRole === 'master' || activeRole === 'admin_cabang') {
+          actionButtons += `<button class="btn-table-edit" onclick="pemicuEditSetor(${item.id})">Edit</button>`;
+          if (activeRole === 'master') {
+            actionButtons += `<button class="btn-table-delete" onclick="hapusSetorBank(${item.id})">Hapus</button>`;
+          }
+        } else if (activeRole === 'owner') {
+          actionButtons = '<span class="lock-badge">Terunci</span>';
         }
 
         tbody.innerHTML += `
@@ -2132,6 +2177,7 @@
     });
 
     window.pemicuEditLaporan = function (id) {
+      if (activeRole === 'owner') return;
       const target = dataLaporan.find(i => i.id === id);
       if (!target) return;
       document.getElementById('edit-id-laporan').value = target.id;
@@ -2188,6 +2234,7 @@
     };
 
     window.hapusLaporanCabang = async function (id) {
+      if (activeRole !== 'master') return;
       if (confirm('Apakah kamu yakin ingin menghapus data laporan harian ini?')) {
         const target = dataLaporan.find(i => i.id === id);
         const { error } = await clientSupabase.from('laporan_cabang').delete().eq('id', id);
@@ -2200,6 +2247,7 @@
     };
 
     window.pemicuEditPiutang = function (id) {
+      if (activeRole === 'owner') return;
       const target = dataPiutang.find(i => i.id === id);
       if (!target) return;
       document.getElementById('edit-id-piutang').value = target.id;
@@ -2213,6 +2261,7 @@
     };
 
     window.hapusPiutang = async function (id) {
+      if (activeRole !== 'master') return;
       if (confirm('Apakah kamu yakin ingin menghapus data piutang ini?')) {
         const target = dataPiutang.find(i => i.id === id);
         const { error } = await clientSupabase.from('piutang').delete().eq('id', id);
@@ -2225,6 +2274,7 @@
     };
 
     window.pemicuEditSetor = function (id) {
+      if (activeRole === 'owner') return;
       const target = dataSetor.find(i => i.id === id);
       if (!target) return;
       document.getElementById('edit-id-setor').value = target.id;
@@ -2235,6 +2285,7 @@
     };
 
     window.hapusSetorBank = async function (id) {
+      if (activeRole !== 'master') return;
       if (confirm('Apakah kamu yakin ingin menghapus data setoran bank ini?')) {
         const target = dataSetor.find(i => i.id === id);
         const { error } = await clientSupabase.from('setor_bank_cabang').delete().eq('id', id);
@@ -2248,6 +2299,8 @@
 
     document.getElementById('form-laporan-harian').addEventListener('submit', async function (e) {
       e.preventDefault();
+      if (activeRole === 'owner') return;
+
       const idLaporan = document.getElementById('edit-id-laporan').value;
 
       const { totalCash, totalTrf } = hitungSubtotalOut();
@@ -2331,6 +2384,8 @@
 
     document.getElementById('form-piutang').addEventListener('submit', async function (e) {
       e.preventDefault();
+      if (activeRole === 'owner') return;
+
       const idPiutang = document.getElementById('edit-id-piutang').value;
       const btn = document.getElementById('btn-submit-piutang');
       btn.disabled = true;
@@ -2384,6 +2439,8 @@
 
     document.getElementById('form-setor-bank').addEventListener('submit', async function (e) {
       e.preventDefault();
+      if (activeRole === 'owner') return;
+
       const idSetor = document.getElementById('edit-id-setor').value;
       if (!idSetor && !confirm('Apakah uang tunai sudah benar-benar disetorkan secara fisik ke ATM / Bank?')) return;
 
