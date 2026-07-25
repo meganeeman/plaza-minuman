@@ -4,7 +4,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login Admin</title>
+  <title>Login Admin - Plaza Minuman</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -49,6 +50,18 @@
       color: #94a3b8;
       font-size: 14px;
       margin-bottom: 30px;
+    }
+
+    .alert-error {
+      background-color: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 20px;
+      display: none;
+      text-align: left;
     }
 
     .form-group {
@@ -97,6 +110,11 @@
       background-color: #0369a1;
     }
 
+    .btn-submit:disabled {
+      background-color: #334155;
+      cursor: not-allowed;
+    }
+
     .footer {
       margin-top: 30px;
       color: #64748b;
@@ -124,18 +142,20 @@
 
     <p class="subtitle">Sistem Manajemen Finansial Terintegrasi</p>
 
-    <form>
+    <div id="alert-error" class="alert-error"></div>
+
+    <form id="form-login">
       <div class="form-group">
         <label for="username">Username Admin</label>
-        <input type="text" id="username" placeholder="Masukkan username">
+        <input type="text" id="username" placeholder="Masukkan username" required autocomplete="username">
       </div>
 
       <div class="form-group">
         <label for="password">Password</label>
-        <input type="password" id="password" placeholder="Masukkan password">
+        <input type="password" id="password" placeholder="Masukkan password" required autocomplete="current-password">
       </div>
 
-      <button type="submit" class="btn-submit">Masuk</button>
+      <button type="submit" id="btn-login" class="btn-submit">Masuk</button>
     </form>
   </div>
 
@@ -143,6 +163,69 @@
     <p>&copy; 2026 Plaza Minuman. All rights reserved.</p>
     <p>Butuh bantuan? <a href="#">Hubungi Tim IT</a></p>
   </div>
+
+  <script>
+    const SUPABASE_URL = "https://vccwscybnhpatjioixfx.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_blMwzDZ5pM1TciQzhsg8UQ_cCB_ixOQ";
+    const clientSupabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const formLogin = document.getElementById('form-login');
+    const alertError = document.getElementById('alert-error');
+    const btnLogin = document.getElementById('btn-login');
+
+    formLogin.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      alertError.style.display = 'none';
+      alertError.innerText = '';
+
+      const usernameInput = document.getElementById('username').value.trim();
+      const passwordInput = document.getElementById('password').value.trim();
+
+      btnLogin.disabled = true;
+      btnLogin.innerText = 'Memeriksa...';
+
+      try {
+        const { data, error } = await clientSupabase
+          .from('users')
+          .select('*')
+          .eq('username', usernameInput)
+          .eq('password', passwordInput)
+          .single();
+
+        if (error || !data) {
+          alertError.innerText = 'Username atau password salah!';
+          alertError.style.display = 'block';
+          btnLogin.disabled = false;
+          btnLogin.innerText = 'Masuk';
+          return;
+        }
+
+        localStorage.setItem('current_admin', data.username);
+        localStorage.setItem('admin_role', data.role);
+        localStorage.setItem('admin_name', data.nama || data.username);
+
+        if (data.role === 'master' || data.role === 'owner') {
+          window.location.href = 'index.html';
+        } else if (data.role === 'admin_cabang') {
+          window.location.href = 'cabang.html';
+        } else if (data.role === 'admin_finansial') {
+          window.location.href = 'finansial.html';
+        } else {
+          alertError.innerText = 'Role akun tidak dikenali. Hubungi Tim IT!';
+          alertError.style.display = 'block';
+          btnLogin.disabled = false;
+          btnLogin.innerText = 'Masuk';
+        }
+
+      } catch (err) {
+        console.error(err);
+        alertError.innerText = 'Terjadi kesalahan koneksi ke server!';
+        alertError.style.display = 'block';
+        btnLogin.disabled = false;
+        btnLogin.innerText = 'Masuk';
+      }
+    });
+  </script>
 
 </body>
 
