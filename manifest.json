@@ -1,0 +1,20 @@
+{
+  "short_name": "Plaza Minuman",
+  "name": "Plaza Minuman - Portal Manajemen",
+  "icons": [
+    {
+      "src": "logo.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "./login.html",
+  "background_color": "#0b0f19",
+  "theme_color": "#0b0f19",
+  "display": "standalone"
+}

@@ -5,6 +5,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Plaza Minuman - Login Admin</title>
+
+  <link rel="icon" type="image/png" href="logo-icon.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0b0f19">
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
@@ -38,30 +43,36 @@
     .login-container {
       background: var(--bg-secondary);
       border: 1px solid var(--border);
-      border-radius: 16px;
+      border-radius: 20px;
       padding: 40px;
       width: 100%;
       max-width: 400px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     }
 
-    .logo {
-      font-size: 24px;
-      font-weight: 700;
+    .logo-wrapper {
       text-align: center;
-      margin-bottom: 8px;
-      letter-spacing: -0.5px;
+      margin-bottom: 24px;
     }
 
-    .logo span {
-      color: var(--accent);
+    .logo-img {
+      width: 140px;
+      height: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 12px rgba(234, 179, 8, 0.15));
+      transition: transform 0.3s ease;
+    }
+
+    .logo-img:hover {
+      transform: scale(1.03);
     }
 
     .subtitle {
       color: var(--text-muted);
-      font-size: 14px;
+      font-size: 13px;
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 28px;
+      font-weight: 400;
     }
 
     .form-group {
@@ -128,7 +139,9 @@
 <body>
 
   <div class="login-container">
-    <div class="logo">Plaza <span>Minuman</span></div>
+    <div class="logo-wrapper">
+      <img src="logo-login.png" alt="Plaza Minuman" class="logo-img">
+    </div>
     <div class="subtitle">Sistem Manajemen Finansial Terintegrasi</div>
 
     <div class="error-msg" id="error-box">Username atau password salah!</div>
@@ -181,7 +194,6 @@
           localStorage.setItem('admin_role', data.role);
           localStorage.setItem('admin_name', data.nama_lengkap);
 
-          // Pengalihan halaman dinamis berdasarkan role database
           if (data.role === 'admin_cabang') {
             window.location.href = 'cabang.html';
           } else if (data.role === 'admin_finansial') {

@@ -5,6 +5,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Plaza Minuman - Portal Manajemen</title>
+
+  <link rel="icon" type="image/png" href="logo-icon.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#060913">
+
   <style>
     :root {
       --bg-primary: #060913;
@@ -73,18 +78,15 @@
     }
 
     .hub-header {
-      margin-bottom: 50px;
+      margin-bottom: 40px;
     }
 
-    h1 {
-      font-size: 36px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-      margin-bottom: 12px;
-    }
-
-    h1 span {
-      color: var(--accent);
+    .hub-logo-img {
+      width: 160px;
+      height: auto;
+      object-fit: contain;
+      margin-bottom: 16px;
+      filter: drop-shadow(0 4px 12px rgba(234, 179, 8, 0.15));
     }
 
     .subtitle {
@@ -215,7 +217,7 @@
 
   <div class="hub-container">
     <div class="hub-header">
-      <h1>Plaza <span>Minuman</span></h1>
+      <img src="logo-login.png" alt="Plaza Minuman" class="hub-logo-img">
       <div class="subtitle">Halo, <span id="user-name" style="color:var(--accent); font-weight:600;"></span>! Pilih
         gerbang panel sistem yang ingin kamu kelola.</div>
     </div>
