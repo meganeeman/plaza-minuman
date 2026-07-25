@@ -56,6 +56,18 @@
       z-index: 1000;
     }
 
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-logo-img {
+      height: 40px;
+      width: auto;
+      object-fit: contain;
+    }
+
     .logo {
       font-size: 20px;
       font-weight: 700;
@@ -965,7 +977,10 @@
   </script>
 
   <nav class="navbar">
-    <div class="logo">Plaza <span>Minuman</span></div>
+    <div class="logo-container">
+      <img src="logo-login.png" alt="Logo Plaza Minuman" class="nav-logo-img">
+      <div class="logo">Plaza <span>Minuman</span></div>
+    </div>
     <button class="burger-btn" id="burger-trigger">
       <span></span>
       <span></span>
