@@ -186,7 +186,7 @@
 
       try {
         const { data, error } = await clientSupabase
-          .from('users')
+          .from('admin_list')
           .select('*')
           .eq('username', usernameInput)
           .eq('password', passwordInput)
@@ -202,7 +202,7 @@
 
         localStorage.setItem('current_admin', data.username);
         localStorage.setItem('admin_role', data.role);
-        localStorage.setItem('admin_name', data.nama || data.username);
+        localStorage.setItem('admin_name', data.nama_lengkap || data.username);
 
         if (data.role === 'master' || data.role === 'owner') {
           window.location.href = 'index.html';
