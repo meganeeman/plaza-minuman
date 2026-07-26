@@ -5,14 +5,12 @@
     {
       "src": "logo-icon.png",
       "type": "image/png",
-      "sizes": "192x192",
-      "purpose": "any maskable"
+      "sizes": "2601x2097"
     },
     {
       "src": "logo-icon.png",
       "type": "image/png",
-      "sizes": "512x512",
-      "purpose": "any maskable"
+      "sizes": "any"
     }
   ],
   "start_url": "./login.html",
