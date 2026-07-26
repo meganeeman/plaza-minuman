@@ -5,6 +5,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Plaza Minuman - Dashboard Cabang</title>
+
+  <link rel="icon" type="image/png" href="logo-icon.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#060913">
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -1389,6 +1394,12 @@
       <div>Cloud Supabase Connected</div>
     </div>
   </footer>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js');
+    }
+  </script>
 
   <script>
     const SUPABASE_URL = "https://vccwscybnhpatjioixfx.supabase.co";

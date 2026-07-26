@@ -255,6 +255,12 @@
   </div>
 
   <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js');
+    }
+  </script>
+
+  <script>
     document.getElementById('user-name').innerText = activeName || activeAdmin;
     document.getElementById('hub-logout').addEventListener('click', function () {
       if (confirm('Apakah kamu yakin ingin keluar dari sistem manajemen?')) {
