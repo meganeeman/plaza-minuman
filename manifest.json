@@ -3,14 +3,14 @@
   "name": "Plaza Minuman - Portal Manajemen",
   "icons": [
     {
-      "src": "logo-icon.png",
+      "src": "logo-login.png",
       "type": "image/png",
-      "sizes": "2601x2097"
+      "sizes": "192x192"
     },
     {
-      "src": "logo-icon.png",
+      "src": "logo-login.png",
       "type": "image/png",
-      "sizes": "any"
+      "sizes": "512x512"
     }
   ],
   "start_url": "./login.html",
